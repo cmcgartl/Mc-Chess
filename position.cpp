@@ -1,7 +1,10 @@
 #include "position.h"
 
+//define move/diretion distances
+//moves that change files are ordered together for wrap around handling (moves that could go off the side edge of the board)
 static constexpr int DiagonalDirections[4] = {7, -9, 9, -7};
 static constexpr int OrthoganalDirections[4] = {-1, 1, -8, 8};
+static constexpr int KnightMoves[8] = {-10, 6, -17, 15, 17, -15, 10, -6};
 
 void Position::generatePieceLists(){
     whitePieces.clear();
@@ -191,4 +194,57 @@ void Position::generateOrthoganalMoves(std::vector<int>& moves, int square, bool
             }
         }
     }
+}
+
+std::vector<int> Position::getValidMovesKnight(int square) const{
+    std::vector<int> moves;
+    moves.reserve(8); // maximum moves a knight can make
+    if(square < 0 || square >= 64){
+        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
+    }
+    Piece n = board.at(square);
+    if(n.type != PieceType::N){
+        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
+    }
+
+    for(int i = 0; i < std::size(KnightMoves); i++){
+        if((square % 8) == 0 && i < 4){ //a file
+            continue;
+        }
+        else if((square - 1) % 8 == 0 && i < 2){ //b file
+            continue;
+        }  
+        else if((square + 1) % 8 == 0 && i >= 4){ //h file
+            continue;
+        }
+        else if((square + 2) % 8 == 0 && i >= 6){
+            continue;
+        }
+
+        int targetSquare = square + KnightMoves[i];
+        if(targetSquare >= 0 && targetSquare <= 63){
+            Piece p = board.at(targetSquare);
+            if(p.color != n.color){
+                moves.push_back(targetSquare);
+            }
+        }
+    }
+    return moves;
+}
+
+std::vector<int> Position::getValidMovesKing(int square) const{
+    std::vector<int> moves;
+    moves.reserve(8); // maximum moves a king can make
+    if(square < 0 || square >= 64){
+        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
+    }
+    Piece k = board.at(square);
+    if(k.type != PieceType::K){
+        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
+    }
+
+    generateDiagonalMoves(moves, square, true, k.color);
+    generateOrthoganalMoves(moves, square, true, k.color);
+
+    return moves;
 }

@@ -98,6 +98,70 @@ TEST_CASE("Test number of queen moves"){
     REQUIRE(multipleCapturesBlocks.getValidMovesQueen(35).size() == 17);
 }
 
+TEST_CASE("Test number of knight moves"){
+    Position oneMid("8/8/8/3N4/8/8/8/8");
+    REQUIRE(oneMid.getWhitePieces().size() == 1);
+    REQUIRE(oneMid.getBlackPieces().size() == 0);
+    REQUIRE(oneMid.getValidMovesKnight(27).size() == 8);
+
+    Position oneLeftEdge("8/8/8/N7/8/8/8/8");
+    REQUIRE(oneLeftEdge.getWhitePieces().size() == 1);
+    REQUIRE(oneLeftEdge.getBlackPieces().size() == 0);
+    REQUIRE(oneLeftEdge.getValidMovesKnight(24).size() == 4);
+
+    Position oneRightEdge("8/8/8/7N/8/8/8/8");
+    REQUIRE(oneRightEdge.getWhitePieces().size() == 1);
+    REQUIRE(oneRightEdge.getBlackPieces().size() == 0);
+    REQUIRE(oneRightEdge.getValidMovesKnight(31).size() == 4);
+
+    Position oneCornerTR("7N/8/8/8/8/8/8/8");
+    REQUIRE(oneCornerTR.getWhitePieces().size() == 1);
+    REQUIRE(oneCornerTR.getBlackPieces().size() == 0);
+    REQUIRE(oneCornerTR.getValidMovesKnight(7).size() == 2);
+
+    Position oneCornerTR2("8/6N1/8/8/8/8/8/8");
+    REQUIRE(oneCornerTR2.getWhitePieces().size() == 1);
+    REQUIRE(oneCornerTR2.getBlackPieces().size() == 0);
+    REQUIRE(oneCornerTR2.getValidMovesKnight(14).size() == 4);
+
+    Position oneCornerBL("8/8/8/8/8/8/8/N7");
+    REQUIRE(oneCornerBL.getWhitePieces().size() == 1);
+    REQUIRE(oneCornerBL.getBlackPieces().size() == 0);
+    REQUIRE(oneCornerBL.getValidMovesKnight(56).size() == 2);
+
+    Position oneCornerBL2("8/8/8/8/8/8/1N6/8");
+    REQUIRE(oneCornerBL2.getWhitePieces().size() == 1);
+    REQUIRE(oneCornerBL2.getBlackPieces().size() == 0);
+    REQUIRE(oneCornerBL2.getValidMovesKnight(49).size() == 4);
+
+    Position oneMidCaptures("8/3q1b2/2P3b1/4N3/2r3P1/3r1P2/8/8");
+    REQUIRE(oneMidCaptures.getWhitePieces().size() == 4);
+    REQUIRE(oneMidCaptures.getBlackPieces().size() == 5);
+    REQUIRE(oneMidCaptures.getValidMovesKnight(28).size() == 5);
+}
+
+TEST_CASE("Test number of king moves"){
+    Position oneMid("8/8/8/3K4/8/8/8/8");
+    REQUIRE(oneMid.getWhitePieces().size() == 1);
+    REQUIRE(oneMid.getBlackPieces().size() == 0);
+    REQUIRE(oneMid.getValidMovesKing(27).size() == 8);
+
+    Position oneCornerBL("8/8/8/8/8/8/8/K7");
+    REQUIRE(oneCornerBL.getWhitePieces().size() == 1);
+    REQUIRE(oneCornerBL.getBlackPieces().size() == 0);
+    REQUIRE(oneCornerBL.getValidMovesKing(56).size() == 3);
+
+    Position oneCornerTR("7K/8/8/8/8/8/8/8");
+    REQUIRE(oneCornerTR.getWhitePieces().size() == 1);
+    REQUIRE(oneCornerTR.getBlackPieces().size() == 0);
+    REQUIRE(oneCornerTR.getValidMovesKing(7).size() == 3);
+
+    Position oneMidCaptures("8/8/3qbP2/3rKP2/3rPb2/8/8/8");
+    REQUIRE(oneMidCaptures.getWhitePieces().size() == 4);
+    REQUIRE(oneMidCaptures.getBlackPieces().size() == 5);
+    REQUIRE(oneMidCaptures.getValidMovesKing(28).size() == 5);
+}
+
 
 
 //---------------------------------------------------------------------//

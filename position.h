@@ -20,6 +20,9 @@ class Position{
         std::vector<int> getValidMovesPawn(int square) const; 
         std::vector<int> getValidMovesBishop(int square)const;
         std::vector<int> getValidMovesQueen(int square)const;
+        std::vector<int> getValidMovesKnight(int square)const;
+        std::vector<int> getValidMovesKing(int square)const;
+
 
         //return a const reference so that we get the private data, but cannot modify
         const std::vector<Piece>& getWhitePieces() const {return whitePieces;}
