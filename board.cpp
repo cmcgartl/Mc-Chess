@@ -115,3 +115,25 @@ Piece Board::at(int square) const{
         throw std::out_of_range("Board::at: index out of range");
     }
 }
+
+void Board::printSquareValues() const{
+        for(int row = 0; row < 8; row++){
+        std::cout << "---------------------------------" << std::endl;
+        for(int col = 0; col < 8; col++){ 
+            const Piece& p = squares[row * 8 + col];
+            char c = '.';
+            switch (p.type){
+                    case PieceType::P:   c = 'P'; break;
+                    case PieceType::N: c = 'N'; break;
+                    case PieceType::B: c = 'B'; break;
+                    case PieceType::R:   c = 'R'; break;
+                    case PieceType::Q:  c = 'Q'; break;
+                    case PieceType::K:   c = 'K'; break;
+                    case PieceType::None:   c = '.'; break;
+            }
+            std::cout << "| " << row * 8 + col << " ";
+        }
+        std::cout << "|" << std::endl;
+    }
+    std::cout << "-------------------------------" << std::endl;
+}

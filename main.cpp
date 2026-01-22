@@ -8,4 +8,5 @@ int main(){
     gameboard.printBoard();
     gameboard.movePiece(45, 28);
     gameboard.printBoard();
+    gameboard.printSquareValues();
 }

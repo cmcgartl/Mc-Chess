@@ -11,7 +11,8 @@ public:
     Piece at(int square) const;
     void movePiece(int src, int dest);
     void clearBoard();
-    const void verifyFEN(const std::string& FEN);
+    void verifyFEN(const std::string& FEN) const;
+    void printSquareValues() const;
 
 private:
     std::array<Piece, 64> squares;
