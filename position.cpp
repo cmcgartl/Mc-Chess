@@ -1,4 +1,5 @@
 #include "position.h"
+#include "move.h"
 
 //define move/diretion distances
 //moves that change files are ordered together for wrap around handling (moves that could go off the side edge of the board)
@@ -22,14 +23,13 @@ void Position::generatePieceLists(){
 }
 
 
-std::vector<int> Position::getValidMovesPawn(int square) const{
-    std::vector<int> moves;
+void Position::getValidMovesPawn(int& count, int square){
     if(square < 0 || square >= 64){
-        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
+        throw std::out_of_range("Position::getValidMovesPawn: provided square is out of range");
     }
     Piece p = board.at(square);
     if(p.type != PieceType::P){
-        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
+        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorrect piece at square" + std::to_string(square));
     }
     if(p.color == Color::w){
         int oneForward = square - 8; //square one square forward
@@ -38,23 +38,27 @@ std::vector<int> Position::getValidMovesPawn(int square) const{
         int captureRight = (square - 8) + 1;
         if(oneForward >= 0){
             if(board.at(oneForward).type == PieceType::None){
-                moves.push_back(oneForward);
+                possibleMoves.push_back(Move(square, oneForward));
+                count++;
             
                 if(square >= 48 && square <= 55){
                     if(board.at(twoForward).type == PieceType::None){
-                        moves.push_back(square - 16);
+                        possibleMoves.push_back(Move(square, twoForward));
+                        count++;
                     }
                 }
             }
         }
         if(captureLeft >= 0 && ((square % 8) != 0)){
             if(board.at(captureLeft).color == Color::b){
-                moves.push_back(captureLeft);
+                possibleMoves.push_back(Move(square, captureLeft));
+                count++;
             }
         }
         if(captureRight >= 0 && ((square + 1) % 8 != 0)){
             if(board.at(captureRight).color == Color::b){
-                moves.push_back(captureRight);
+                possibleMoves.push_back(Move(square, captureRight));
+                count++;
             }
         }
     }
@@ -65,67 +69,35 @@ std::vector<int> Position::getValidMovesPawn(int square) const{
         int captureRight = square + 8 + 1;
         if(oneForward <= 63){
             if(board.at(oneForward).type == PieceType::None){
-                moves.push_back(oneForward);
+                possibleMoves.push_back(Move(square, oneForward));
+                count++;
             
                 if(square >= 8 && square <= 15){
                     if(board.at(twoForward).type == PieceType::None){
-                        moves.push_back(square + 16);
+                        possibleMoves.push_back(Move(square, square + 16));
+                        count++;
                     }
                 }
             }
         }
         if(captureRight <= 63 && (square % 8 != 0)){
             if(board.at(captureRight).color == Color::w){
-                moves.push_back(captureRight);
+                possibleMoves.push_back(Move(square, captureRight));
+                count++;
             }
         }
         if(captureLeft <= 63 && ((square + 1) % 8 != 0)){
             if(board.at(captureLeft).color == Color::w){
-                moves.push_back(captureLeft);
+                possibleMoves.push_back(Move(square, captureLeft));
+                count++;
             }
         }
     }
-    return moves;
 }
 
-std::vector<int> Position::getValidMovesBishop(int square) const{
-    std::vector<int> moves;
-    moves.reserve(13);
-    if(square < 0 || square >= 64){
-        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
-    }
-    Piece b = board.at(square);
-    if(b.type != PieceType::B){
-        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
-    }
-
-    generateDiagonalMoves(moves, square, false, b.color);
-
-    return moves;
-}
-
-std::vector<int>Position::getValidMovesQueen(int square) const {
-    std::vector<int> moves;
-    moves.reserve(27); // maximum moves a queen can make
-    if(square < 0 || square >= 64){
-        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
-    }
-    Piece q = board.at(square);
-    if(q.type != PieceType::Q){
-        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
-    }
-
-    generateDiagonalMoves(moves, square, false, q.color);
-    generateOrthoganalMoves(moves, square, false, q.color);
-
-    return moves;
-}
-
-
-void Position::generateDiagonalMoves(std::vector<int>& moves, int square, bool cap, Color color) const{;
+void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color){;
     for(int i = 0; i < 4; i++){
         int nextSquare = square;
-        int count = 0;
         while(true){
             if(nextSquare % 8 == 0 && i <= 1){
                 break;
@@ -141,14 +113,16 @@ void Position::generateDiagonalMoves(std::vector<int>& moves, int square, bool c
             Piece p = board.at(nextSquare);
 
             if(p.type == PieceType::None){
-                moves.push_back(nextSquare);
+                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                possibleMoves.push_back(m);
                 count++;
                 if(cap){
                     break;
                 }
             }
             else if(p.color != color){
-                moves.push_back(nextSquare);
+                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                possibleMoves.push_back(m);
                 count++;
                 break;
             }
@@ -159,10 +133,9 @@ void Position::generateDiagonalMoves(std::vector<int>& moves, int square, bool c
     }
 }
 
-void Position::generateOrthoganalMoves(std::vector<int>& moves, int square, bool cap, Color color) const{;
+void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color color){;
     for(int i = 0; i < 4; i++){
         int nextSquare = square;
-        int count = 0;
         while(true){
             if(nextSquare % 8 == 0 && i == 0){
                 break;
@@ -178,14 +151,16 @@ void Position::generateOrthoganalMoves(std::vector<int>& moves, int square, bool
             Piece p = board.at(nextSquare);
 
             if(p.type == PieceType::None){
-                moves.push_back(nextSquare);
+                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                possibleMoves.push_back(m);
                 count++;
                 if(cap){
                     break;
                 }
             }
             else if(p.color != color){
-                moves.push_back(nextSquare);
+                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                possibleMoves.push_back(m);
                 count++;
                 break;
             }
@@ -196,15 +171,13 @@ void Position::generateOrthoganalMoves(std::vector<int>& moves, int square, bool
     }
 }
 
-std::vector<int> Position::getValidMovesKnight(int square) const{
-    std::vector<int> moves;
-    moves.reserve(8); // maximum moves a knight can make
+void Position::getValidMovesKnight(int& count, int square){
     if(square < 0 || square >= 64){
-        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
+        throw std::out_of_range("Position::getValidMovesKnight: provided square is out of range");
     }
     Piece n = board.at(square);
     if(n.type != PieceType::N){
-        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
+        throw std::logic_error("Position::getValidMovesKnight: generating moves for incorret piece");
     }
 
     for(int i = 0; i < std::size(KnightMoves); i++){
@@ -225,26 +198,74 @@ std::vector<int> Position::getValidMovesKnight(int square) const{
         if(targetSquare >= 0 && targetSquare <= 63){
             Piece p = board.at(targetSquare);
             if(p.color != n.color){
-                moves.push_back(targetSquare);
+                possibleMoves.push_back(Move(square, targetSquare));
+                count++;
             }
         }
     }
-    return moves;
 }
 
-std::vector<int> Position::getValidMovesKing(int square) const{
-    std::vector<int> moves;
-    moves.reserve(8); // maximum moves a king can make
-    if(square < 0 || square >= 64){
-        throw std::out_of_range("Position::getValidMovesPawn: provided squar is out of range");
-    }
-    Piece k = board.at(square);
-    if(k.type != PieceType::K){
-        throw std::logic_error("Position::getValidMovesPawn: generating moves for incorret piece");
+bool Position::tryMove(int src, int dest){
+    if(src < 0 || src > 63 || dest < 0 || dest > 63){
+        throw std::out_of_range("Position::tryMove: provided square is out of range");
     }
 
-    generateDiagonalMoves(moves, square, true, k.color);
-    generateOrthoganalMoves(moves, square, true, k.color);
+    //TODO
+}
 
-    return moves;
+void Position::generateAllValidMovesForSide(Side side){
+    Color color;
+    side == Side::w ? color = Color::w : color = Color::b;
+
+    for(int i = 0; i < 64; i++){
+        if(board.at(i).color == color){
+            generateValidMoves(i);
+        }
+    }
+}
+
+
+void Position::generateValidMoves(int square){
+    if(square < 0 || square > 63){
+        throw std::out_of_range("Position::generateValidMoves: provided square is out of range");
+    }
+
+    Piece p = board.at(square);
+    if(p.type == PieceType::None) return;
+    Color pColor = p.color;
+
+    int moveIndex = possibleMoves.size();
+    int count = 0;
+
+    std::string piece = "";
+    if(p.type == PieceType::P){
+        piece = "Pawn";
+    }
+    switch(p.type){
+        case PieceType::P:
+            getValidMovesPawn(count, square);
+            break;
+        case PieceType::B:
+            generateDiagonalMoves(count, square, false, pColor);
+            break;
+        case PieceType::N:
+            getValidMovesKnight(count, square);
+            break;
+        case PieceType::R:
+            generateOrthoganalMoves(count, square, false, pColor);
+            break;
+        case PieceType::Q:
+            generateDiagonalMoves(count, square, false, pColor);
+            generateOrthoganalMoves(count, square, false, pColor);
+            break;
+        case PieceType::K:
+            generateDiagonalMoves(count, square, true, pColor);
+            generateOrthoganalMoves(count, square, true, pColor);
+            break;
+    }
+
+    if(count > 0){
+        moveStartIndices[square] = moveIndex;
+        moveCounts[square] = count;
+    }
 }

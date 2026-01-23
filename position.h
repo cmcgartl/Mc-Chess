@@ -1,5 +1,6 @@
 #include "board.h"
 #include "vector"
+#include "move.h"
 
 
 enum class Side {w, b};
@@ -8,20 +9,26 @@ class Position{
     public:
         Position():board(START_FEN) , sideToMove(Side::w){
             generatePieceLists();
+            moveStartIndices.fill(-1);
+            moveCounts.fill(-1);
         };
         Position(const std::string& FEN): board(FEN){
             generatePieceLists();
+            moveStartIndices.fill(-1);
+            moveCounts.fill(-1);
         }
+
         bool tryMove(int src, int dest);
         void generatePieceLists();
 
         //return vector by value because new generated list of moves -> probably want to add a member vec of possible moves stored privately in position and update this
-        std::vector<int> getValidMoves(int square) const;
-        std::vector<int> getValidMovesPawn(int square) const; 
-        std::vector<int> getValidMovesBishop(int square)const;
-        std::vector<int> getValidMovesQueen(int square)const;
-        std::vector<int> getValidMovesKnight(int square)const;
-        std::vector<int> getValidMovesKing(int square)const;
+        const std::vector<Move>& getValidMoves() const {return possibleMoves;}
+
+        void generateAllValidMovesForSide(Side side);
+        void generateValidMoves(int square);
+        void getValidMovesPawn(int& count, int square); 
+        void getValidMovesKnight(int& count, int square);
+
 
 
         //return a const reference so that we get the private data, but cannot modify
@@ -34,8 +41,23 @@ class Position{
         Side sideToMove;
         std::vector<Piece> whitePieces;
         std::vector<Piece> blackPieces;
+        std::vector<Move> possibleMoves; //vector of Moves (to and from squares)
+        std::array<int, 64> moveStartIndices; //moveStartSquares[i] = index in possibleMoves where the possible moves from square i are stored
+        std::array<int, 64> moveCounts; //stores moveCounts[i] = how many moves there are from square i
         static constexpr const char* START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
 
-        void generateDiagonalMoves(std::vector<int>& moves, int square, bool cap, Color color) const;
-        void generateOrthoganalMoves(std::vector<int>& moves, int square, bool cap, Color color) const;
+        void generateDiagonalMoves(int& count, int square, bool cap, Color color);
+        void generateOrthoganalMoves(int& count, int square, bool cap, Color color);
 };
+
+//generating moves:
+//for piece in whitePieces
+    //make list of all possible moves for that piece
+    //insert all possible moves into possibleMoves. record start index (possibleMoves.size())
+    //update moveStartSquares[square] = start index in possibleMoves
+
+//when we try to make a move (where move is requestedMove):
+//go to possibleMoves[moveStartSquares[requestedMove.from]]
+//while current move in possibleMoves currentMove.from == requestedMove.from
+    //if currentMove ==requestedMove: execute move
+    //else, move to next move
