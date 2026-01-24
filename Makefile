@@ -4,10 +4,10 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -g
 APP_TARGET  := chess
 TEST_TARGET := tests_runner
 
-APP_SRCS  := main.cpp board.cpp position.cpp
+APP_SRCS  := src/main.cpp src/board.cpp src/position.cpp
 APP_OBJS  := $(APP_SRCS:.cpp=.o)
 
-TEST_SRCS := tests/test_main.cpp tests/test_board.cpp board.cpp position.cpp
+TEST_SRCS := tests/test_main.cpp tests/test_board.cpp src/board.cpp src/position.cpp
 TEST_OBJS := $(TEST_SRCS:.cpp=.o)
 
 .PHONY: all clean test

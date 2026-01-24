@@ -1,5 +1,5 @@
 #include <iostream>
-
+#pragma once
 
 enum class PieceType{
     P,

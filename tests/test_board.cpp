@@ -1,5 +1,5 @@
 #include "../third_party/catch.hpp"
-#include "../position.h"
+#include "../src/position.h"
 
 TEST_CASE("Test number of Pawn moves") {
     Position p;
@@ -103,19 +103,19 @@ TEST_CASE("Test number of queen moves"){
     REQUIRE(surroundedByEnemies.getWhitePieces().size() == 1);
     REQUIRE(surroundedByEnemies.getBlackPieces().size() == 8);
     surroundedByEnemies.generateValidMoves(35);
-    REQUIRE(surroundedByEnemies.getValidMoves().size() == 8);
+    REQUIRE(surroundedByEnemies.getValidMovesForPieceAt(35).size() == 8);
 
     Position surroundedByFriends("8/8/8/2prp3/2bqb3/2prp3/8/8");
     REQUIRE(surroundedByFriends.getWhitePieces().size() == 0);
     REQUIRE(surroundedByFriends.getBlackPieces().size() == 9);
     surroundedByFriends.generateValidMoves(35);
-    REQUIRE(surroundedByFriends.getValidMoves().size() == 0);
+    REQUIRE(surroundedByFriends.getValidMovesForPieceAt(35).size() == 0);
 
     Position multipleCapturesBlocks("8/b2R4/8/4p3/N2qR3/8/8/3r4");
     REQUIRE(multipleCapturesBlocks.getWhitePieces().size() == 3);
     REQUIRE(multipleCapturesBlocks.getBlackPieces().size() == 4);
     multipleCapturesBlocks.generateValidMoves(35);
-    REQUIRE(multipleCapturesBlocks.getValidMoves().size() == 17);
+    REQUIRE(multipleCapturesBlocks.getValidMovesForPieceAt(35).size() == 17);
 }
 
 
@@ -178,9 +178,76 @@ TEST_CASE("test number of rook moves"){
     for(auto& test : testInputs){
         Position testPosition(test.first);
         testPosition.generateValidMoves(squares[i]);
-        REQUIRE(testPosition.getValidMoves().size() == test.second);
+        REQUIRE(testPosition.getValidMovesForPieceAt(squares[i]).size() == test.second);
         i++;
     }
+}
+
+TEST_CASE("test number of moves for all pieces in a positon"){
+    Position p;
+    REQUIRE(p.getWhitePieces().size() == 16);
+    REQUIRE(p.getBlackPieces().size() == 16);
+    Side side = Side::w;
+    p.generateAllValidMovesForSide(side);
+    REQUIRE(p.getValidMoves().size() == 20);
+}
+
+TEST_CASE("test check detection"){
+    Position p;
+    REQUIRE(p.getWhitePieces().size() == 16);
+    REQUIRE(p.getBlackPieces().size() == 16);
+    Side side = Side::w;
+    p.generateAllValidMovesForSide(side);
+    REQUIRE(p.getValidMoves().size() == 20);
+    REQUIRE(p.getPiecesAttackingBlack().size() == 0);
+    REQUIRE(p.getPiecesAttackingWhite().size() == 0);
+
+    Position p1("8/8/8/8/8/3n1N2/8/4K3");
+    side = Side::b;
+    p1.generateAllValidMovesForSide(side);
+    REQUIRE(p1.getValidMoves().size() == 8);
+    REQUIRE(p1.getPiecesAttackingBlack().size() == 0);
+    REQUIRE(p1.getPiecesAttackingWhite().size() == 1);
+
+    Position p2("8/8/8/8/5p1p/6K1/8/8");
+    side = Side::b;
+    p2.generateAllValidMovesForSide(side);
+    side = Side::w;
+    p2.generateAllValidMovesForSide(side);
+    //REQUIRE(p2.getValidMoves().size() == 8);
+    REQUIRE(p2.getPiecesAttackingBlack().size() == 0);
+    REQUIRE(p2.getPiecesAttackingWhite().size() == 2);
+
+    Position p3("3B4/1N6/8/k2R1n2/1P3p1p/QN4K1/4n2q/6r1");
+    side = Side::b;
+    p3.generateAllValidMovesForSide(side);
+    side = Side::w;
+    p3.generateAllValidMovesForSide(side);
+    //REQUIRE(p2.getValidMoves().size() == 8);
+    REQUIRE(p3.getPiecesAttackingBlack().size() == 6);
+    REQUIRE(p3.getPiecesAttackingWhite().size() == 6);
+}
+
+TEST_CASE("Test Pinned Piece Detection"){
+
+    Pin pin1(28, 12, 60, Piece(PieceType::P, Color::w));
+    std::pair<std::string, Pin> testInputs[] = {
+        std::make_pair("rnb1k1n1/ppp1qppp/8/4P3/3P4/2P2N2/P1P2PPP/R1BQKB1R w KQkq - 0 1", pin1)
+    };
+
+    int i = 0;
+    for(auto& test : testInputs){
+        Position testPosition(test.first);
+        testPosition.generateAllValidMovesForSide(Side::w);
+        testPosition.generateAllValidMovesForSide(Side::b);
+        REQUIRE(testPosition.getPins().size() == 1);
+        Pin detectedPin = testPosition.getPins()[0];
+        std::cout << "detected pin from " << static_cast<int>(detectedPin.from) << std::endl;
+        std::cout << "generated pin from " << static_cast<int>(pin1.from) << std::endl;
+        REQUIRE(detectedPin.from == pin1.from);
+        i++;
+    }
+
 }
 
 

@@ -1,6 +1,7 @@
 #include "board.h"
 #include "vector"
 #include "move.h"
+#include "pin.h"
 
 
 enum class Side {w, b};
@@ -28,12 +29,17 @@ class Position{
         void generateValidMoves(int square);
         void getValidMovesPawn(int& count, int square); 
         void getValidMovesKnight(int& count, int square);
+        std::vector<Move> getValidMovesForPieceAt(int square) const;
 
 
 
         //return a const reference so that we get the private data, but cannot modify
         const std::vector<Piece>& getWhitePieces() const {return whitePieces;}
         const std::vector<Piece>& getBlackPieces() const {return blackPieces;}
+        const std::vector<int>& getPiecesAttackingBlack() const {return squaresAttackingBlackKing;}
+        const std::vector<int>& getPiecesAttackingWhite() const {return squaresAttackingWhiteKing;}
+        const std::vector<Pin>& getPins() const {return pins;}
+
 
 
     private:
@@ -43,11 +49,22 @@ class Position{
         std::vector<Piece> blackPieces;
         std::vector<Move> possibleMoves; //vector of Moves (to and from squares)
         std::array<int, 64> moveStartIndices; //moveStartSquares[i] = index in possibleMoves where the possible moves from square i are stored
+
         std::array<int, 64> moveCounts; //stores moveCounts[i] = how many moves there are from square i
         static constexpr const char* START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
 
         void generateDiagonalMoves(int& count, int square, bool cap, Color color);
         void generateOrthoganalMoves(int& count, int square, bool cap, Color color);
+
+
+
+        //whiteMoveStarts
+        //blackMoveStarts
+        //bool whiteInCheck;
+        //bool blackInCheck;
+        std::vector<int> squaresAttackingWhiteKing;
+        std::vector<int> squaresAttackingBlackKing;
+        std::vector<Pin> pins;
 };
 
 //generating moves:
