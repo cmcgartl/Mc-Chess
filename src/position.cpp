@@ -118,6 +118,8 @@ void Position::getValidMovesPawn(int& count, int square){
 void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color){;
     for(int i = 0; i < 4; i++){
         int nextSquare = square;
+        bool checkingForPin = false;
+        int possiblePinSquare = -1;
         while(true){
             if(nextSquare % 8 == 0 && i <= 1){
                 break;
@@ -133,23 +135,38 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
             Piece p = board.at(nextSquare);
 
             if(p.type == PieceType::None){
-                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                possibleMoves.push_back(m);
-                count++;
+                if(!checkingForPin){
+                    Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                    possibleMoves.push_back(m);
+                    count++;
+                }
                 if(cap){
                     break;
                 }
             }
             else if(p.color != color){
-                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                possibleMoves.push_back(m);
-                count++;
-                if(p.type == PieceType::K){
-                    color == Color::w ? 
-                        squaresAttackingBlackKing.push_back(square) :
-                        squaresAttackingWhiteKing.push_back(square);
+                if(checkingForPin){
+                    if(p.type == PieceType::K){
+                        pins.emplace_back(Pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare)));
+                    }
+                    break;
                 }
-                break;
+                if(!checkingForPin){
+                    Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                    possibleMoves.push_back(m);
+                    count++;
+                    if(p.type == PieceType::K){
+                        color == Color::w ? 
+                            squaresAttackingBlackKing.push_back(square) :
+                            squaresAttackingWhiteKing.push_back(square);
+                            break;
+                    }
+                    checkingForPin = true;
+                    possiblePinSquare = nextSquare;
+                }
+                if(cap || !checkingForPin){
+                    break;
+                }
             }
             else{
                 break;
@@ -178,9 +195,9 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
             Piece p = board.at(nextSquare);
 
             if(p.type == PieceType::None){
-                Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                possibleMoves.push_back(m);
                 if(!checkingForPin){
+                    Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                    possibleMoves.push_back(m);
                     count++;
                 }
                 if(cap){
@@ -188,6 +205,12 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                 }
             }
             else if(p.color != color){
+                if(checkingForPin){
+                    if(p.type == PieceType::K){
+                        pins.emplace_back(Pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare)));
+                    }
+                    break;
+                }
                 if(!checkingForPin){
                     Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
                     possibleMoves.push_back(m);
@@ -200,11 +223,6 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                     }
                     checkingForPin = true;
                     possiblePinSquare = nextSquare;
-                }
-                if(checkingForPin){
-                    if(p.type == PieceType::K){
-                        pins.emplace_back(Pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare)));
-                    }
                 }
                 if(cap || !checkingForPin){
                     break;

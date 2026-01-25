@@ -230,21 +230,38 @@ TEST_CASE("test check detection"){
 
 TEST_CASE("Test Pinned Piece Detection"){
 
-    Pin pin1(28, 12, 60, Piece(PieceType::P, Color::w));
-    std::pair<std::string, Pin> testInputs[] = {
-        std::make_pair("rnb1k1n1/ppp1qppp/8/4P3/3P4/2P2N2/P1P2PPP/R1BQKB1R w KQkq - 0 1", pin1)
+    std::vector<std::vector<Pin>> pins = {
+        {Pin(28, 12, 60, Piece(PieceType::P, Color::w))},
+        {Pin(28, 12, 60, Piece(PieceType::P, Color::w)), Pin(42, 33, 60, Piece(PieceType::N, Color::w))},
+        {},
+        {
+            Pin(51, 48, 42, Piece(PieceType::P, Color::w)), Pin(43, 25, 52, Piece(PieceType::P, Color::w)), Pin(45, 4, 42, Piece(PieceType::P, Color::w)),
+            Pin(45, 31, 42, Piece(PieceType::P, Color::w)), Pin(53, 55, 42, Piece(PieceType::P, Color::w))
+        }
+        //pinned: 51, 43, 44, 45,  53
+        //from: 48, 25, 4, 31, 55
+        //to: 52
     };
 
-    int i = 0;
-    for(auto& test : testInputs){
-        Position testPosition(test.first);
+    std::vector<std::string> boards = {
+        "rnb1k1n1/ppp1qppp/8/4P3/3P4/2P2N2/P1P2PPP/R1BQKB1R w KQkq - 0 1",
+        "rnb1k1n1/ppp1qppp/8/4P3/1b1P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq",
+        "rnb1k1n1/ppp1qppp/8/4P3/1b1P4/2N2N2/PPPBBPPP/R2QK2R b KQkq - 0 1",
+        "4r3/8/8/1b5b/3n4/3PPP2/q2PKP1r/8 b - - 0 1"
+    };
+
+
+    REQUIRE(boards.size() == pins.size());
+
+    for(size_t i = 0; i < boards.size(); i++){
+        Position testPosition(boards[i]);
         testPosition.generateAllValidMovesForSide(Side::w);
         testPosition.generateAllValidMovesForSide(Side::b);
-        REQUIRE(testPosition.getPins().size() == 1);
-        Pin detectedPin = testPosition.getPins()[0];
-        std::cout << "detected pin from " << static_cast<int>(detectedPin.from) << std::endl;
-        std::cout << "generated pin from " << static_cast<int>(pin1.from) << std::endl;
-        REQUIRE(detectedPin.from == pin1.from);
+        std::vector<Pin> detectedPins = testPosition.getPins();
+        REQUIRE(detectedPins.size() == pins[i].size());
+        for(size_t j = 0; j < detectedPins.size(); j++){
+            REQUIRE(detectedPins[j] == pins[i][j]);
+        }
         i++;
     }
 

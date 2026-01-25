@@ -23,6 +23,11 @@ struct Piece {
     Piece() : type(PieceType::None), color(Color::None) {}
     Piece(PieceType t, Color c) : type(t), color(c) {}
 
+    bool operator==(const Piece& other) const {
+        return type == other.type &&
+        color == other.color;
+    }
+
 };
 
 //what does a piece need?
