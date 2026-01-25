@@ -30,6 +30,7 @@ class Position{
         void getValidMovesPawn(int& count, int square); 
         void getValidMovesKnight(int& count, int square);
         std::vector<Move> getValidMovesForPieceAt(int square) const;
+        bool moveStopsCheck(Move& move, std::vector<int>& attackingSquares);
 
 
 
@@ -39,8 +40,6 @@ class Position{
         const std::vector<int>& getPiecesAttackingBlack() const {return squaresAttackingBlackKing;}
         const std::vector<int>& getPiecesAttackingWhite() const {return squaresAttackingWhiteKing;}
         const std::vector<Pin>& getPins() const {return pins;}
-
-
 
     private:
         Board board;

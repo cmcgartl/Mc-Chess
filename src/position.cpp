@@ -7,6 +7,13 @@ static constexpr int DiagonalDirections[4] = {7, -9, 9, -7};
 static constexpr int OrthoganalDirections[4] = {-1, 1, -8, 8};
 static constexpr int KnightMoves[8] = {-10, 6, -17, 15, 17, -15, 10, -6};
 
+bool squareInvalid(int square){
+    if(square < 0 || square > 63){
+        return true;
+    }
+    return false;
+}
+
 void Position::generatePieceLists(){
     whitePieces.clear();
     blackPieces.clear();
@@ -21,7 +28,6 @@ void Position::generatePieceLists(){
         }
     }
 }
-
 
 void Position::getValidMovesPawn(int& count, int square){
     if(square < 0 || square >= 64){
@@ -348,6 +354,94 @@ std::vector<Move> Position::getValidMovesForPieceAt(int square) const {
     return moves;
 }
 
+bool Position::moveStopsCheck(Move& move, std::vector<int>& attackingSquares){
+    if(attackingSquares.size() == 0){
+        return true;
+    }
+    if(attackingSquares.size() == 1 && move.to == attackingSquares[0]){
+        return true;
+    }
+
+}
+
+bool squareIntersectsOrthoganal(int start, int square, int end){
+    if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
+        throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
+    }
+
+    if(start == square || end == square || start == end){
+       return false;
+    };
+
+    //if target square is not withing start - end, return false
+    if(!((start < square && end > square) || (end < square && start > square))) return false;
+
+    //if we are checking intersection of a horizontal line (same rank)
+    if(start / 8 == end / 8){
+        return true;
+    }
+
+    //if we are checking intersection of a vertical line (same file)
+    if((start - end) % 8 == 0){
+
+        //return true if square is along this file, false o.w.
+        return !((start - square) % 8);
+    }
+
+    return false;
+}
+
+bool squareIntersectsDiagonal(int start, int square, int end){
+    if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
+        throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
+    }
+    if(start == square || end == square || start == end){
+        return false;
+    }
+
+    //start/end must form a diagonal: checks if the difference in rank = the difference in file
+    if(std::abs((start / 8) - (end / 8)) != std::abs((start % 8) - (end % 8))){
+        return false;
+    }
+
+    //determine the diagonal direction
+    int direction = 0;
+    bool valid = false;
+    if((start - end) % 7 == 0){
+        if(start - end > 0){
+            direction = DiagonalDirections[3];
+        }
+        else{
+            direction = DiagonalDirections[0];
+        }
+        valid = true;
+    }
+    if((start - end) % 9 == 0){
+        if(start - end > 0){
+            direction = DiagonalDirections[1];
+        }
+        else{
+            direction = DiagonalDirections[2];
+        }
+        valid = true;
+    }
+
+    //if provided start/end is not a valid diagonal, stop
+    if(!valid){
+        return false;
+    }
+
+    //traverse diagonal until we see target square
+    int curr = start;
+    while(curr != end){
+        curr += direction;
+        if(curr == square){
+            return true;
+        }
+    }
+
+    return false;
+}
 
 //determining checks
 //need to know:

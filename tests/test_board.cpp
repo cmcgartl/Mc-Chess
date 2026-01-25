@@ -267,6 +267,41 @@ TEST_CASE("Test Pinned Piece Detection"){
 
 }
 
+/*bool Position::testDiagonalIntersects(){
+    bool t1 = squareIntersectsDiagonal(0, 3, 7);
+    bool t2 = squareIntersectsDiagonal(10, 26, 50);
+    bool t3 = squareIntersectsDiagonal(42, 36, 22);
+    bool t4 = squareIntersectsDiagonal(60, 60, 24);
+
+    bool t5 = squareIntersectsDiagonal(8, 17, 26);
+    bool t6 = squareIntersectsDiagonal(59, 45, 31);
+    bool t7 = squareIntersectsDiagonal(60, 51, 24);
+
+    return !t1 && !t2 && !t3 && !t4 && t5 && t6 && t7;
+}
+
+bool Position::testOrthoganalIntersects(){
+    bool t1 = squareIntersectsOrthoganal(0, 9, 15);
+    bool t2 = squareIntersectsOrthoganal(0, 5, 39);
+    bool t3 = squareIntersectsOrthoganal(13, 36, 61);
+
+    bool t4 = squareIntersectsOrthoganal(42, 53, 47);
+    bool t5 = squareIntersectsOrthoganal(0, 3, 7);
+    bool t6 = squareIntersectsOrthoganal(2, 10, 26);
+    bool t7 = squareIntersectsOrthoganal(55, 52, 49);
+    bool t8 = squareIntersectsOrthoganal(49, 41, 33);
+
+    std::cout << "gave test t1 a result of " << t1 << std::endl;
+    std::cout << "gave test t2 a result of " << t3 << std::endl;
+    std::cout << "gave test t3 a result of " << t4 << std::endl;
+    std::cout << "gave test t4 a result of " << t5 << std::endl;
+    std::cout << "gave test t5 a result of " << t6 << std::endl;
+    std::cout << "gave test t6 a result of " << t7 << std::endl;
+    std::cout << "gave test t7 a result of " << t8 << std::endl;
+    
+    return !t1 && !t2 && !t3 && !t4 && t5 && t6 && t7 && t8;
+}*/
+
 
 
 /*

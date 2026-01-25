@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include "piece.h"
 #include <array>
