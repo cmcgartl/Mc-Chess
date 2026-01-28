@@ -2,12 +2,18 @@
 #include <cstdint>
 #include "piece.h"
 
+enum class PinType{
+    Diagonal,
+    Orthoganal
+};
+
 struct Pin {
     uint8_t pinSquare;
     uint8_t from;
     uint8_t to;
     Piece pinnedPiece;
-    Pin(uint8_t pinSquare, uint8_t from, uint8_t to, Piece pinnedPiece):
+    PinType pType;
+    Pin(uint8_t pinSquare, uint8_t from, uint8_t to, Piece pinnedPiece, PinType pType):
         pinSquare(pinSquare), from(from), to(to), pinnedPiece(pinnedPiece){};
 
     bool operator==(const Pin& other) const {

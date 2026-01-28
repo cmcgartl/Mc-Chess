@@ -77,3 +77,11 @@ class Position{
 //while current move in possibleMoves currentMove.from == requestedMove.from
     //if currentMove ==requestedMove: execute move
     //else, move to next move
+
+//if in check
+//only produce moves that solve check
+//for every pseudo-legal move
+    //check if move stops check
+        //if move captures attacker
+        //if move blocks attacker
+        //if move moves the king

@@ -20,8 +20,12 @@ enum class Color{
 struct Piece {
     PieceType type;
     Color color;
-    Piece() : type(PieceType::None), color(Color::None) {}
-    Piece(PieceType t, Color c) : type(t), color(c) {}
+    bool pinned;
+    Pin* pin;
+    Piece() : type(PieceType::None), color(Color::None), pinned(false), pin(nullptr) {}
+    Piece(PieceType t, Color c) : type(t), color(c), pinned(false), pin(nullptr) {}
+    Piece(PieceType t, Color c, Pin* p): type(t), color(c), pin(p), pinned(p == nullptr){}
+
 
     bool operator==(const Piece& other) const {
         return type == other.type &&
