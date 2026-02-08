@@ -9,7 +9,7 @@ public:
     Board();
     Board(const std::string& FEN);
     void printBoard() const;
-    Piece at(int square) const;
+    Piece& at(int square);
     void movePiece(int src, int dest);
     void clearBoard();
     void verifyFEN(const std::string& FEN) const;

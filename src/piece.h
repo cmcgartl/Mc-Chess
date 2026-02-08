@@ -1,6 +1,8 @@
 #include <iostream>
 #pragma once
 
+struct Pin;
+
 enum class PieceType{
     P,
     N,
@@ -20,11 +22,21 @@ enum class Color{
 struct Piece {
     PieceType type;
     Color color;
-    bool pinned;
-    Pin* pin;
-    Piece() : type(PieceType::None), color(Color::None), pinned(false), pin(nullptr) {}
-    Piece(PieceType t, Color c) : type(t), color(c), pinned(false), pin(nullptr) {}
-    Piece(PieceType t, Color c, Pin* p): type(t), color(c), pin(p), pinned(p == nullptr){}
+    bool pinnedD;
+    bool pinnedO;
+    std::vector<Pin*> pins;
+    std::vector<int> pinDirections;
+    Piece() : type(PieceType::None), color(Color::None), pinnedD(false), pinnedO(false) {}
+    Piece(PieceType t, Color c) : type(t), color(c), pinnedD(false), pinnedO(false) {}
+    Piece(PieceType t, Color c, Pin* p, int direction, bool pD, bool pO): type(t), color(c), pinnedD(pD), pinnedO(pO){
+        if(p == nullptr){
+            pinnedD = false;
+            pinnedO = false;
+            return;
+        }
+        pinDirections.push_back(direction);
+        pins.push_back(p);
+    }
 
 
     bool operator==(const Piece& other) const {

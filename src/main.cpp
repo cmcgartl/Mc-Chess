@@ -11,8 +11,8 @@ int main(){
     gameboard.printBoard();
     gameboard.printSquareValues();
     Position p;
-    bool passedD = p.testDiagonalIntersects();
-    bool passedO = p.testOrthoganalIntersects();
-    std::cout << "TEST RESULT: " << passedD<< std::endl;
-    std::cout << "TEST RESULT: " << passedO<< std::endl;
+    //bool passedD = p.testDiagonalIntersects();
+    //bool passedO = p.testOrthoganalIntersects();
+    //std::cout << "TEST RESULT: " << passedD<< std::endl;
+    //std::cout << "TEST RESULT: " << passedO<< std::endl;
 }

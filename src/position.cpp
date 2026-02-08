@@ -121,7 +121,8 @@ void Position::getValidMovesPawn(int& count, int square){
     }
 }
 
-void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color){
+void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections){
+    Piece p = board.at(square);
     for(int i = 0; i < 4; i++){
         int nextSquare = square;
         bool checkingForPin = false;
@@ -134,6 +135,22 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
                 break;
             }
             nextSquare+= DiagonalDirections[i];
+            
+            //determine if the current direction is a restricted direction due to a pin
+            if(p.pinnedD){
+                bool restrictedDirection = true;
+                for(size_t j = 0; i < pinDirections.size(); i++){
+                    if(DiagonalDirections[i] == pinDirections[j] || DiagonalDirections[i] == -pinDirections[j]){
+                        restrictedDirection = false;
+                    }
+                }
+                //if this direction is unavailable due to pin, don't search it
+                if(restrictedDirection){
+                    break;
+                }
+            }
+
+
             if(nextSquare < 0 || nextSquare >= 64){
                 break;
             }
@@ -153,11 +170,12 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
             else if(p.color != color){
                 if(checkingForPin){
                     if(p.type == PieceType::K){
+                        Piece& piece = board.at(possiblePinSquare);
                         Pin pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare), PinType::Diagonal);
                         pins.emplace_back(pin);
-                        Piece piece = board.at(possiblePinSquare);
-                        piece.pinned = true;
-                        piece.pin = &pin;
+                        piece.pinnedD = true;
+                        piece.pins.push_back(&pin);
+                        piece.pinDirections.push_back(DiagonalDirections[i]);
                     }
                     break;
                 }
@@ -217,12 +235,12 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
             else if(p.color != color){
                 if(checkingForPin){
                     if(p.type == PieceType::K){
+                        Piece& piece = board.at(possiblePinSquare);
                         Pin pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare), PinType::Orthoganal);
                         pins.emplace_back(pin);
-                        Piece piece = board.at(possiblePinSquare);
-                        piece.pinned = true;
-                        piece.pin = &pin;
-
+                        piece.pinnedO = true;
+                        piece.pins.push_back(&pin);
+                        piece.pinDirections.push_back(OrthoganalDirections[i]);
                     }
                     break;
                 }
@@ -325,30 +343,32 @@ void Position::generateValidMoves(int square){
     if(p.type == PieceType::P){
         piece = "Pawn";
     }
+
+    std::vector<Pin*> pins = p.pins;
     switch(p.type){
         case PieceType::P:
             getValidMovesPawn(count, square);
             break;
         case PieceType::B:
-            if(p.pin->pType != PinType::Orthoganal){
+            if(!p.pinnedO){
                 generateDiagonalMoves(count, square, false, pColor);
             }
             break;
         case PieceType::N:
-            if(!p.pinned){
+            if(!p.pinnedO && !p.pinnedD){
                 getValidMovesKnight(count, square);
             }
             break;
         case PieceType::R:
-            if(p.pin->pType != PinType::Diagonal){
+            if(!p.pinnedD){
                 generateOrthoganalMoves(count, square, false, pColor);
             }
             break;
         case PieceType::Q:
-            if(p.pin->pType != PinType::Diagonal){
+            if(!p.pinnedD){
                 generateOrthoganalMoves(count, square, false, pColor);
             }
-            if(p.pin->pType != PinType::Orthoganal){
+            if(!p.pinnedO){
                 generateDiagonalMoves(count, square, false, pColor);
             }
             break;
