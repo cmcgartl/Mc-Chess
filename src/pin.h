@@ -23,6 +23,14 @@ struct Pin {
         return pinSquare == other.pinSquare &&
             from == other.from &&
             to == other.to &&
-            pinnedPiece == other.pinnedPiece;
+            pinnedPiece == other.pinnedPiece &&
+            pType == other.pType;
+
+    }
+
+    void printPin(){
+        std::cout << "PinSquare: " << std::to_string(pinSquare) << '\n';
+        std::cout << "from: " << std::to_string(from) << '\n';
+        std::cout << "to: " << std::to_string(to) << '\n';
     }
 };

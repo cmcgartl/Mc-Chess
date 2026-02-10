@@ -139,8 +139,8 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
             //determine if the current direction is a restricted direction due to a pin
             if(p.pinnedD){
                 bool restrictedDirection = true;
-                for(size_t j = 0; i < pinDirections.size(); i++){
-                    if(DiagonalDirections[i] == pinDirections[j] || DiagonalDirections[i] == -pinDirections[j]){
+                for(size_t j = 0; j < pinDirections.size(); j++){
+                    if(DiagonalDirections[i] == pinDirections[j] ||DiagonalDirections[i] == -pinDirections[j]){
                         restrictedDirection = false;
                     }
                 }
@@ -203,7 +203,8 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
     }
 }
 
-void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color color){;
+void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections){;
+    Piece p = board.at(square);
     for(int i = 0; i < 4; i++){
         bool checkingForPin = false;
         int nextSquare = square;
@@ -220,7 +221,21 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                 break;
             }
 
-            Piece p = board.at(nextSquare);
+
+            //determine if the current direction is a restricted direction due to a pin
+            if(p.pinnedD){
+                bool restrictedDirection = true;
+                for(size_t j = 0; j < pinDirections.size(); j++){
+                    if(DiagonalDirections[i] == pinDirections[j] ||DiagonalDirections[i] == -pinDirections[j]){
+                        restrictedDirection = false;
+                    }
+                }
+                //if this direction is unavailable due to pin, don't search it
+                if(restrictedDirection){
+                    break;
+                }
+            }
+
 
             if(p.type == PieceType::None){
                 if(!checkingForPin){
@@ -328,6 +343,7 @@ void Position::generateAllValidMovesForSide(Side side){
 
 
 void Position::generateValidMoves(int square){
+
     if(square < 0 || square > 63){
         throw std::out_of_range("Position::generateValidMoves: provided square is out of range");
     }
@@ -340,8 +356,8 @@ void Position::generateValidMoves(int square){
     int count = 0;
 
     std::string piece = "";
-    if(p.type == PieceType::P){
-        piece = "Pawn";
+    if(p.type == PieceType::R){
+        piece = "Rook";
     }
 
     std::vector<Pin*> pins = p.pins;
@@ -351,7 +367,7 @@ void Position::generateValidMoves(int square){
             break;
         case PieceType::B:
             if(!p.pinnedO){
-                generateDiagonalMoves(count, square, false, pColor);
+                generateDiagonalMoves(count, square, false, pColor, p.pinDirections);
             }
             break;
         case PieceType::N:
@@ -361,20 +377,22 @@ void Position::generateValidMoves(int square){
             break;
         case PieceType::R:
             if(!p.pinnedD){
-                generateOrthoganalMoves(count, square, false, pColor);
+                generateOrthoganalMoves(count, square, false, pColor, p.pinDirections);
             }
             break;
         case PieceType::Q:
             if(!p.pinnedD){
-                generateOrthoganalMoves(count, square, false, pColor);
+                generateOrthoganalMoves(count, square, false, pColor, p.pinDirections);
             }
             if(!p.pinnedO){
-                generateDiagonalMoves(count, square, false, pColor);
+                generateDiagonalMoves(count, square, false, pColor, p.pinDirections);
             }
             break;
         case PieceType::K:
-            generateDiagonalMoves(count, square, true, pColor);
-            generateOrthoganalMoves(count, square, true, pColor);
+            generateDiagonalMoves(count, square, true, pColor, p.pinDirections);
+            generateOrthoganalMoves(count, square, true, pColor, p.pinDirections);
+            break;
+        default:
             break;
     }
 

@@ -52,8 +52,8 @@ class Position{
         std::array<int, 64> moveCounts; //stores moveCounts[i] = how many moves there are from square i
         static constexpr const char* START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
 
-        void generateDiagonalMoves(int& count, int square, bool cap, Color color);
-        void generateOrthoganalMoves(int& count, int square, bool cap, Color color);
+        void generateDiagonalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections);
+        void generateOrthoganalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections);
 
 
 

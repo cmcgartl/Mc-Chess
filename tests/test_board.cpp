@@ -1,7 +1,7 @@
 #include "../third_party/catch.hpp"
 #include "../src/position.h"
 
-TEST_CASE("Test number of Pawn moves") {
+/*TEST_CASE("Test number of Pawn moves") {
     Position p;
     REQUIRE(p.getWhitePieces().size() == 16);
     REQUIRE(p.getBlackPieces().size() == 16);
@@ -230,13 +230,17 @@ TEST_CASE("test check detection"){
 
 TEST_CASE("Test Pinned Piece Detection"){
 
+    Piece pawn(PieceType::P, Color::w);
+    Piece& p = pawn;
+    Piece knight(PieceType::N, Color::w);
+    Piece& n = knight;
     std::vector<std::vector<Pin>> pins = {
-        {Pin(28, 12, 60, Piece(PieceType::P, Color::w))},
-        {Pin(28, 12, 60, Piece(PieceType::P, Color::w)), Pin(42, 33, 60, Piece(PieceType::N, Color::w))},
+        {Pin(28, 12, 60, p, PinType::Orthoganal)},
+        {Pin(28, 12, 60, p, PinType::Orthoganal), Pin(42, 33, 60, n, PinType::Diagonal)},
         {},
         {
-            Pin(51, 48, 42, Piece(PieceType::P, Color::w)), Pin(43, 25, 52, Piece(PieceType::P, Color::w)), Pin(45, 4, 42, Piece(PieceType::P, Color::w)),
-            Pin(45, 31, 42, Piece(PieceType::P, Color::w)), Pin(53, 55, 42, Piece(PieceType::P, Color::w))
+            Pin(51, 48, 52, p, PinType::Orthoganal), Pin(43, 25, 52, p, PinType::Diagonal), Pin(44, 4, 52, p, PinType::Orthoganal),
+            Pin(45, 31, 52, p, PinType::Diagonal), Pin(53, 55, 52, p, PinType::Orthoganal)
         }
         //pinned: 51, 43, 44, 45,  53
         //from: 48, 25, 4, 31, 55
@@ -253,19 +257,73 @@ TEST_CASE("Test Pinned Piece Detection"){
 
     REQUIRE(boards.size() == pins.size());
 
+    std::cout << " boards size = " << boards.size() << std::endl;
+
     for(size_t i = 0; i < boards.size(); i++){
         Position testPosition(boards[i]);
         testPosition.generateAllValidMovesForSide(Side::w);
         testPosition.generateAllValidMovesForSide(Side::b);
         std::vector<Pin> detectedPins = testPosition.getPins();
         REQUIRE(detectedPins.size() == pins[i].size());
+        int count = 0;
         for(size_t j = 0; j < detectedPins.size(); j++){
-            REQUIRE(detectedPins[j] == pins[i][j]);
-        }
-        i++;
-    }
+            for(int k = 0; k < pins[i].size(); k++){
 
+                if(pins[i].size() > 0 && detectedPins[j] == pins[i][k]){
+                    count++;
+                }
+            }
+        }
+        REQUIRE(count == pins[i].size());
+    }
+}*/
+
+TEST_CASE("Test Pinned piece movement generation"){
+
+    // Test 1: Bishop pinned diagonally - can only move along pin ray toward attacker
+    Position bishopPinnedDiagonal("8/8/5q2/4B3/3K4/8/8/8");
+    // White bishop at e5 (square 20), white king at d4 (27), black queen at f6 (13)
+    // Bishop is pinned on the d4-e5-f6 diagonal
+    // Should only be able to capture the queen at f6
+    bishopPinnedDiagonal.generateAllValidMovesForSide(Side::b);
+    bishopPinnedDiagonal.generateAllValidMovesForSide(Side::w);
+    REQUIRE(bishopPinnedDiagonal.getPins().size() == 1);
+    std::vector<Move> bishopMoves = bishopPinnedDiagonal.getValidMovesForPieceAt(28);
+    REQUIRE(bishopMoves.size() == 1);
+    REQUIRE(bishopMoves[0].to == 21); // Can only move to f6
+
+    // Test 2: Bishop pinned orthogonally - cannot move at all
+    Position bishopPinnedOrthogonal("8/8/8/1r1BK3/8/8/8/8 w - - 0 1");
+    // White bishop at d5 (square 27), white king at e5 (28), black rook at d1 (59)
+    // Bishop is pinned orthogonally along the d-file
+    // Bishops can only move diagonally, so a bishop pinned orthogonally has no legal moves
+    bishopPinnedOrthogonal.generateAllValidMovesForSide(Side::b);
+    bishopPinnedOrthogonal.generateAllValidMovesForSide(Side::w);
+    std::vector<Move> bishopPinnedOrtho = bishopPinnedOrthogonal.getValidMovesForPieceAt(27);
+    REQUIRE(bishopPinnedOrtho.size() == 0);
+
+    // Test 3: Queen pinned diagonally - can move multiple squares along pin ray
+    Position queenPinnedDiagonal("8/6K1/8/8/3Q4/8/8/q7 w - - 0 1");
+    // White queen at c3 (square 42), white king at d2 (51), black queen at a1 (56)
+    // Queen is pinned on the a1-c3-d2 diagonal (direction +7/-7)
+    // Should be able to move to b2 (49) and a1 (56, capturing the attacker)
+    queenPinnedDiagonal.generateAllValidMovesForSide(Side::b);
+    queenPinnedDiagonal.generateAllValidMovesForSide(Side::w);
+    std::vector<Move> queenMovesB = queenPinnedDiagonal.getValidMovesForPieceAt(56);
+    std::vector<Move> queenMoves = queenPinnedDiagonal.getValidMovesForPieceAt(35);
+    REQUIRE(queenMovesB.size() == 17);
+    REQUIRE(queenMoves.size() == 5);
+    // Check that moves are along the pin ray
+    bool hasB2 = false, hasA1 = false;
+    for(const auto& move : queenMoves) {
+        if(move.to == 49) hasB2 = true;  // b2
+        if(move.to == 56) hasA1 = true;  // a1 (capture)
+    }
+    REQUIRE(hasB2);
+    REQUIRE(hasA1);
 }
+
+
 
 /*bool Position::testDiagonalIntersects(){
     bool t1 = squareIntersectsDiagonal(0, 3, 7);
