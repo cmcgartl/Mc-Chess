@@ -6,6 +6,27 @@
 static constexpr int DiagonalDirections[4] = {7, -9, 9, -7};
 static constexpr int OrthoganalDirections[4] = {-1, 1, -8, 8};
 static constexpr int KnightMoves[8] = {-10, 6, -17, 15, 17, -15, 10, -6};
+static constexpr int pawnAttackerDirectionsBlack[] = {-7, -9};
+static constexpr int pawnAttackerDirectionsWhite[] = {7, 9};
+
+struct DirectionSet {
+    const int* dirs;
+    size_t count;
+    bool limited;
+};
+
+DirectionSet getDirections(PieceType type, Color color) {
+    switch(type) {
+        case PieceType::B: return {DiagonalDirections, 4, false};
+        case PieceType::R: return {OrthoganalDirections, 4, false};
+        case PieceType::Q: return {DiagonalDirections, 4, false}; // need both, see below
+        case PieceType::N: return {KnightMoves, 8, true};
+        case PieceType::P: return color == Color::w 
+            ? DirectionSet{pawnAttackerDirectionsWhite, 2, true}
+            : DirectionSet{pawnAttackerDirectionsBlack, 2, true};
+        default: return {nullptr, 0, false};
+    }
+}
 
 bool squareInvalid(int square){
     if(square < 0 || square > 63){
@@ -122,6 +143,12 @@ void Position::getValidMovesPawn(int& count, int square){
 }
 
 void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections){
+
+    bool inCheck;
+    color == Color::w ?
+        inCheck = (squaresAttackingWhiteKing.size() != 0) :
+        inCheck = (squaresAttackingBlackKing.size() != 0);
+
     Piece p = board.at(square);
     for(int i = 0; i < 4; i++){
         int nextSquare = square;
@@ -174,7 +201,7 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
                         Pin pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare), PinType::Diagonal);
                         pins.emplace_back(pin);
                         piece.pinnedD = true;
-                        piece.pins.push_back(&pin);
+                        piece.pins.push_back(&pins.back());
                         piece.pinDirections.push_back(DiagonalDirections[i]);
                     }
                     break;
@@ -223,10 +250,10 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
 
 
             //determine if the current direction is a restricted direction due to a pin
-            if(p.pinnedD){
+            if(p.pinnedO){
                 bool restrictedDirection = true;
                 for(size_t j = 0; j < pinDirections.size(); j++){
-                    if(DiagonalDirections[i] == pinDirections[j] ||DiagonalDirections[i] == -pinDirections[j]){
+                    if(OrthoganalDirections[i] == pinDirections[j] ||DiagonalDirections[i] == -pinDirections[j]){
                         restrictedDirection = false;
                     }
                 }
@@ -236,7 +263,7 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                 }
             }
 
-
+            Piece p = board.at(nextSquare);
             if(p.type == PieceType::None){
                 if(!checkingForPin){
                     Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
@@ -254,7 +281,7 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                         Pin pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare), PinType::Orthoganal);
                         pins.emplace_back(pin);
                         piece.pinnedO = true;
-                        piece.pins.push_back(&pin);
+                        piece.pins.push_back(&pins.back());
                         piece.pinDirections.push_back(OrthoganalDirections[i]);
                     }
                     break;
@@ -448,6 +475,53 @@ bool squareIntersectsOrthoganal(int start, int square, int end){
     return false;
 }
 
+void Position::generateCheckResolutions(int square, Color color){
+    Piece p = board.at(square);
+    //attack ray src,dest (attacker,king)
+    std::pair<int, int> attackRay = {-1, -1};
+
+    if(p.type != PieceType::P && p.type != PieceType::N){
+        if(color == Color::w){
+            attackRay.first = 
+        }
+
+    }
+
+    switch (p.type){
+        case PieceType::B:
+            walkDirectionsAndDo(square, DiagonalDirections, false, [&color, this](int sq){
+                //intersects attack ray
+                std::vector<int>* attackers;
+                int kingSquare = -1;
+                color == Color::w ? attackers = &squaresAttackingWhiteKing : &squaresAttackingBlackKing;
+                color == Color::w ? kingSquare = board.whiteKingSquare : board.blackKingSquare;
+                bool checkResolved = false;
+                for(const auto& attackerSquare : *attackers){
+                    if(squareIntersectsDiagonal(attackerSquare, sq, kingSquare)){
+                        checkResolved = true;
+
+                        //TODO: mark self as pinned
+                    }
+                    if(sq == attackerSquare){
+                        checkResolved = true;
+                    }
+
+                }
+                    //if intersect attack ray, have to mark yourself as pinned!
+                //captures attacker
+                
+            })
+
+        case PieceType::P: color == Color::w?
+
+    }
+
+
+
+    
+}
+
+
 bool squareIntersectsDiagonal(int start, int square, int end){
     if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
         throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
@@ -498,6 +572,70 @@ bool squareIntersectsDiagonal(int start, int square, int end){
     }
 
     return false;
+}
+
+template<size_t N, typename Func>
+bool Position::walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func){
+    int curr = startSquare;
+    for(int i = 0; i < N; i++){
+        while(true){
+            if(curr % 8 == 0 && (direction[i] == -1 || direction[i] == 7 || direction[i] == -9)) break;
+            if((curr + 1) % 8 == 0 && (direction[i] == 1 || direction[i] == -7 || direction[i] == 9)) break;
+    
+            curr += directions[i];
+            if(curr < 0 || curr >= 64) break;
+
+            if(func(curr) || limitedMovementPiece) break;
+        }
+        curr = startSquare;
+    }
+}
+
+
+void Position::isSquareAttacked(int square, Color color){
+    bool attacked = false;
+
+    walkDirectionsAndDo(square, DiagonalDirections, false, [&attacked, this, color](int sq){
+        if(board.at(sq).type != PieceType::None){
+            if((board.at(sq).type == PieceType::B || board.at(sq).type == PieceType::Q) && board.at(sq).color != color){
+                    attacked = true; 
+            }
+            return true;
+        }
+
+        return false;
+    });
+
+    bool attackedByOrthoganal = walkDirectionsAndDo(square, OrthoganalDirections, false, [&attacked, this, color](int sq){
+        if(board.at(sq).type != PieceType::None){
+            if((board.at(sq).type == PieceType::R || board.at(sq).type == PieceType::Q) && board.at(sq).color != color){
+                    attacked = true;
+            }
+            return true;
+        }
+        return false;
+    });
+
+    bool attackedByKnight = walkDirectionsAndDo(square, KnightMoves, true, [&attacked, this, color](int sq){
+        if(board.at(sq).type != PieceType::None){
+            if((board.at(sq).type == PieceType::N) && board.at(sq).color != color){
+                    attacked = true; 
+            }
+            return true;
+        }
+        return false;
+    });
+
+    bool attackedByPawn = walkDirectionsAndDo(square, color == Color::w ? pawnAttackerDirectionsWhite : pawnAttackerDirectionsBlack, true, [&attacked, this, color](int sq){
+        if(board.at(sq).type != PieceType::None){
+            if((board.at(sq).type == PieceType::P) && board.at(sq).color != color){
+                    attacked = true;; 
+            }
+            return true;
+        }
+        return false;
+    });
+
 }
 
 //determining checks

@@ -1,7 +1,7 @@
 #include "../third_party/catch.hpp"
 #include "../src/position.h"
 
-/*TEST_CASE("Test number of Pawn moves") {
+TEST_CASE("Test number of Pawn moves") {
     Position p;
     REQUIRE(p.getWhitePieces().size() == 16);
     REQUIRE(p.getBlackPieces().size() == 16);
@@ -55,7 +55,6 @@
     REQUIRE(oneTwoCapturesRank2Blocked2.getValidMoves().size() == 2);
 
 }
-
 
 TEST_CASE("Test number of bishop moves"){
     Position oneMid("8/8/8/3B4/8/8/8/8");
@@ -228,6 +227,7 @@ TEST_CASE("test check detection"){
     REQUIRE(p3.getPiecesAttackingWhite().size() == 6);
 }
 
+
 TEST_CASE("Test Pinned Piece Detection"){
 
     Piece pawn(PieceType::P, Color::w);
@@ -276,7 +276,7 @@ TEST_CASE("Test Pinned Piece Detection"){
         }
         REQUIRE(count == pins[i].size());
     }
-}*/
+}
 
 TEST_CASE("Test Pinned piece movement generation"){
 

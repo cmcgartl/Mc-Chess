@@ -49,9 +49,15 @@ Board::Board(const std::string& FEN){
         }
         for(size_t j = FENIndex; j < delim_pos; j++){          //repeat from current index to delimiter index
             if(isValidLetter(FEN[j])){                      //if character is a valid letter, create a piece
-                Color color = isupper(FEN[j]) ? Color::w: Color::b;
+                Color color = isupper(FEN[j]) ? Color::w : Color::b;
                 PieceType type = charToPieceType(FEN[j]);
                 squares[square] = Piece(type, color);
+
+                //if the piece is a king, save the king's location
+                if(type == PieceType::K){
+                    color == Color::w ? whiteKingSquare = square : blackKingSquare = square;
+                }
+
                 square++;
                 FENIndex++;
             }

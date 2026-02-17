@@ -41,6 +41,10 @@ class Position{
         const std::vector<int>& getPiecesAttackingWhite() const {return squaresAttackingWhiteKing;}
         const std::vector<Pin>& getPins() const {return pins;}
 
+        template<size_t N, typename Func>
+        bool walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func);
+        void isSquareAttacked(int square, Color color);
+
     private:
         Board board;
         Side sideToMove;
@@ -54,6 +58,7 @@ class Position{
 
         void generateDiagonalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections);
         void generateOrthoganalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections);
+        void generateCheckResolutions(int square, Color color);
 
 
 

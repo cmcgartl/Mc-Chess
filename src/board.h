@@ -14,6 +14,8 @@ public:
     void clearBoard();
     void verifyFEN(const std::string& FEN) const;
     void printSquareValues() const;
+    int whiteKingSquare;
+    int blackKingSquare;
 
 private:
     std::array<Piece, 64> squares;
