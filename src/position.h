@@ -42,8 +42,8 @@ class Position{
         const std::vector<Pin>& getPins() const {return pins;}
 
         template<size_t N, typename Func>
-        bool walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func);
-        void isSquareAttacked(int square, Color color);
+        void walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func);
+        bool isSquareAttacked(int square, Color color);
 
     private:
         Board board;

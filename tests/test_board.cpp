@@ -325,6 +325,8 @@ TEST_CASE("Test Pinned piece movement generation"){
 
 
 
+
+
 /*bool Position::testDiagonalIntersects(){
     bool t1 = squareIntersectsDiagonal(0, 3, 7);
     bool t2 = squareIntersectsDiagonal(10, 26, 50);
