@@ -16,6 +16,7 @@ public:
     void printSquareValues() const;
     int whiteKingSquare;
     int blackKingSquare;
+    std::array<Piece, 64>& getSquares() {return squares;}
 
 private:
     std::array<Piece, 64> squares;

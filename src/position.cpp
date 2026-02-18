@@ -38,6 +38,86 @@ bool squareInvalid(int square){
     return false;
 }
 
+bool squareIntersectsDiagonal(int start, int square, int end){
+    if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
+        throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
+    }
+    if(start == square || end == square || start == end){
+        return false;
+    }
+
+    //start/end must form a diagonal: checks if the difference in rank = the difference in file
+    if(std::abs((start / 8) - (end / 8)) != std::abs((start % 8) - (end % 8))){
+        return false;
+    }
+
+    //determine the diagonal direction
+    int direction = 0;
+    bool valid = false;
+    if((start - end) % 7 == 0){
+        if(start - end > 0){
+            direction = DiagonalDirections[3];
+        }
+        else{
+            direction = DiagonalDirections[0];
+        }
+        valid = true;
+    }
+    if((start - end) % 9 == 0){
+        if(start - end > 0){
+            direction = DiagonalDirections[1];
+        }
+        else{
+            direction = DiagonalDirections[2];
+        }
+        valid = true;
+    }
+
+    //if provided start/end is not a valid diagonal, stop
+    if(!valid){
+        return false;
+    }
+
+    //traverse diagonal until we see target square
+    int curr = start;
+    while(curr != end){
+        curr += direction;
+        if(curr == square){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+bool squareIntersectsOrthoganal(int start, int square, int end){
+    if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
+        throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
+    }
+
+    if(start == square || end == square || start == end){
+       return false;
+    };
+
+    //if target square is not withing start - end, return false
+    if(!((start < square && end > square) || (end < square && start > square))) return false;
+
+    //if we are checking intersection of a horizontal line (same rank)
+    if(start / 8 == end / 8){
+        return true;
+    }
+
+    //if we are checking intersection of a vertical line (same file)
+    if((start - end) % 8 == 0){
+
+        //return true if square is along this file, false o.w.
+        return !((start - square) % 8);
+    }
+
+    return false;
+}
+
 void Position::generatePieceLists(){
     whitePieces.clear();
     blackPieces.clear();
@@ -380,7 +460,6 @@ void Position::generateAllValidMovesForSide(Side side){
 
 
 void Position::generateValidMoves(int square){
-
     if(square < 0 || square > 63){
         throw std::out_of_range("Position::generateValidMoves: provided square is out of range");
     }
@@ -458,33 +537,6 @@ bool Position::moveStopsCheck(Move& move, std::vector<int>& attackingSquares){
 
 }
 
-bool squareIntersectsOrthoganal(int start, int square, int end){
-    if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
-        throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
-    }
-
-    if(start == square || end == square || start == end){
-       return false;
-    };
-
-    //if target square is not withing start - end, return false
-    if(!((start < square && end > square) || (end < square && start > square))) return false;
-
-    //if we are checking intersection of a horizontal line (same rank)
-    if(start / 8 == end / 8){
-        return true;
-    }
-
-    //if we are checking intersection of a vertical line (same file)
-    if((start - end) % 8 == 0){
-
-        //return true if square is along this file, false o.w.
-        return !((start - square) % 8);
-    }
-
-    return false;
-}
-
 //Possible performance issue in that we will call this multiple times for a position with a check, causing multiple redeclarations of the lambda
 void Position::generateCheckResolutions(int square, Color color){
     Piece p = board.at(square);
@@ -495,6 +547,11 @@ void Position::generateCheckResolutions(int square, Color color){
 
     int generatedMoveCount = 0;
     int moveIndex = possibleMoves.size();
+
+    // Pinned pieces can never resolve a check
+    if(p.type != PieceType::K && (p.pinnedD || p.pinnedO)){
+        return;
+    }
 
     auto pawnMoveLambda = [&color, this, &attackers, &kingSquare, &square, &generatedMoveCount](int sq){
         bool checkResolved = false;
@@ -551,7 +608,7 @@ void Position::generateCheckResolutions(int square, Color color){
             }
 
             if(checkResolved == false){
-                return true;
+                return false;
             }
 
             checkResolved = false;
@@ -562,7 +619,7 @@ void Position::generateCheckResolutions(int square, Color color){
     };
 
     auto kingEscapeLambda = [this, &color, &generatedMoveCount, &square](int sq){
-        if(board.at(sq).type == PieceType::None){
+        if(board.at(sq).color != color){
             if(!isSquareAttacked(sq, color)){
                 possibleMoves.push_back(Move(square, sq));
                 generatedMoveCount++;
@@ -588,21 +645,21 @@ void Position::generateCheckResolutions(int square, Color color){
             break;
         case PieceType::P:
             if(color == Color::w){
-                walkDirectionsAndDo(square, {7, 9}, true, pawnCaptureLambda);
-                if(square >= 8 && square <= 15 && board.at(square + 8).type == PieceType::None){
-                    walkDirectionsAndDo(square, {8, 16}, true, pawnMoveLambda);
-                }
-                else{
-                    walkDirectionsAndDo(square, {8}, true, pawnMoveLambda);
-                }
-            }
-            else{
                 walkDirectionsAndDo(square, {-7, -9}, true, pawnCaptureLambda);
                 if(square >= 48 && square <= 55 && board.at(square - 8).type == PieceType::None){
                     walkDirectionsAndDo(square, {-8, -16}, true, pawnMoveLambda);
                 }
                 else{
                     walkDirectionsAndDo(square, {-8}, true, pawnMoveLambda);
+                }
+            }
+            else{
+                walkDirectionsAndDo(square, {7, 9}, true, pawnCaptureLambda);
+                if(square >= 8 && square <= 15 && board.at(square + 8).type == PieceType::None){
+                    walkDirectionsAndDo(square, {8, 16}, true, pawnMoveLambda);
+                }
+                else{
+                    walkDirectionsAndDo(square, {8}, true, pawnMoveLambda);
                 }
             }
             break;
@@ -621,67 +678,13 @@ void Position::generateCheckResolutions(int square, Color color){
         return;      
     }
 
-
-
-bool squareIntersectsDiagonal(int start, int square, int end){
-    if(squareInvalid(start) || squareInvalid(end) || squareInvalid(square)){
-        throw std::out_of_range("Position::squareIntersectsOrthoganal: provided square is out of range");
-    }
-    if(start == square || end == square || start == end){
-        return false;
-    }
-
-    //start/end must form a diagonal: checks if the difference in rank = the difference in file
-    if(std::abs((start / 8) - (end / 8)) != std::abs((start % 8) - (end % 8))){
-        return false;
-    }
-
-    //determine the diagonal direction
-    int direction = 0;
-    bool valid = false;
-    if((start - end) % 7 == 0){
-        if(start - end > 0){
-            direction = DiagonalDirections[3];
-        }
-        else{
-            direction = DiagonalDirections[0];
-        }
-        valid = true;
-    }
-    if((start - end) % 9 == 0){
-        if(start - end > 0){
-            direction = DiagonalDirections[1];
-        }
-        else{
-            direction = DiagonalDirections[2];
-        }
-        valid = true;
-    }
-
-    //if provided start/end is not a valid diagonal, stop
-    if(!valid){
-        return false;
-    }
-
-    //traverse diagonal until we see target square
-    int curr = start;
-    while(curr != end){
-        curr += direction;
-        if(curr == square){
-            return true;
-        }
-    }
-
-    return false;
-}
-
 template<size_t N, typename Func>
 void Position::walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func){
     int curr = startSquare;
     for(int i = 0; i < N; i++){
         while(true){
             if(curr % 8 == 0 && (directions[i] == -1 || directions[i] == 7 || directions[i] == -9)) break;
-            if((curr + 1) % 8 == 0 && (directions[i] == 1 || directions[i] == -7 || directios[i] == 9)) break;
+            if((curr + 1) % 8 == 0 && (directions[i] == 1 || directions[i] == -7 || directions[i] == 9)) break;
     
             curr += directions[i];
             if(curr < 0 || curr >= 64) break;
@@ -701,6 +704,11 @@ bool Position::isSquareAttacked(int square, Color color){
             if((board.at(sq).type == PieceType::B || board.at(sq).type == PieceType::Q) && board.at(sq).color != color){
                     attacked = true; 
             }
+
+            //to handle squares attacked by x-ray: if we see our own king, keep looking
+            if(board.at(sq).type == PieceType::K && board.at(sq).color == color){
+                return false;
+            }
             return true;
         }
 
@@ -711,6 +719,11 @@ bool Position::isSquareAttacked(int square, Color color){
         if(board.at(sq).type != PieceType::None){
             if((board.at(sq).type == PieceType::R || board.at(sq).type == PieceType::Q) && board.at(sq).color != color){
                     attacked = true;
+            }
+
+            //to handle squares attacked by x-ray: if we see our own king, keep looking
+            if(board.at(sq).type == PieceType::K && board.at(sq).color == color){
+                return false;
             }
             return true;
         }
@@ -738,6 +751,48 @@ bool Position::isSquareAttacked(int square, Color color){
     });
 
     return attacked;
+}
+
+//TODO: issue with who generating what moves
+void Position::makeMove(const Move& move){
+    int start = moveStartIndices[move.from];
+    int end = start + moveCounts[move.from];
+    bool found = false;
+    for(int i = start; i < end; i++){
+        if(possibleMoves[i] == move){
+            found = true;
+        }
+    }
+
+    if(!found) return;
+
+    board.movePiece(move.from, move.to);
+    possibleMoves.clear();
+    moveStartIndices.fill(0);
+    moveCounts.fill(0);
+    pins.clear();
+
+    for(auto& piece : board.getSquares()){
+        piece.pins.clear();
+        piece.pinDirections.clear();
+        piece.pinnedD = false;
+        piece.pinnedO = false;
+    }
+
+    sideToMove == Side::w ? sideToMove = Side::b : sideToMove = Side::w;
+
+    generatePieceLists();
+
+    Side opponentSide = (sideToMove == Side::w) ? Side::b : Side::w;
+    generateAllValidMovesForSide(opponentSide);
+
+    possibleMoves.clear();
+    moveStartIndices.fill(-1);
+    moveCounts.fill(-1);
+
+    // Generate current side's moves using the attack data
+    generateAllValidMovesForSide(sideToMove);
+
 }
 
 //determining checks

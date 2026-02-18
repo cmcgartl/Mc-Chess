@@ -1,3 +1,4 @@
+#pragma once 
 #include "board.h"
 #include "vector"
 #include "move.h"
@@ -40,6 +41,10 @@ class Position{
         const std::vector<int>& getPiecesAttackingBlack() const {return squaresAttackingBlackKing;}
         const std::vector<int>& getPiecesAttackingWhite() const {return squaresAttackingWhiteKing;}
         const std::vector<Pin>& getPins() const {return pins;}
+        Side getSideToMove() const {return sideToMove;}
+        void setSideToMove(Side side) {sideToMove = side;}
+        const Board& getBoard() const {return board;}
+        void makeMove(const Move& move);
 
         template<size_t N, typename Func>
         void walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func);

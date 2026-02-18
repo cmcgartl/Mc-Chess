@@ -109,6 +109,11 @@ void Board::movePiece(int src, int dest){
         throw std::logic_error("Board::movePiece: no piece at source square");
     }
 
+    if(squares[src].type == PieceType::K){
+        if(squares[src].color == Color::w) whiteKingSquare = dest;
+        else blackKingSquare = dest;
+    }
+
     squares[dest] = squares[src];
     squares[src] = Piece{};
 }
