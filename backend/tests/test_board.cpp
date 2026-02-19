@@ -1,5 +1,6 @@
 #include "../third_party/catch.hpp"
 #include "../src/position.h"
+#include "../src/game.h"
 
 TEST_CASE("Test number of Pawn moves") {
     Position p;
@@ -227,7 +228,6 @@ TEST_CASE("test check detection"){
     //REQUIRE(p3.getPiecesAttackingWhite().size() == 6);
 }
 
-
 TEST_CASE("Test Pinned Piece Detection"){
 
     Piece pawn(PieceType::P, Color::w);
@@ -241,7 +241,8 @@ TEST_CASE("Test Pinned Piece Detection"){
         {
             Pin(51, 48, 52, p, PinType::Orthoganal), Pin(43, 25, 52, p, PinType::Diagonal), Pin(44, 4, 52, p, PinType::Orthoganal),
             Pin(45, 31, 52, p, PinType::Diagonal), Pin(53, 55, 52, p, PinType::Orthoganal)
-        }
+        },
+        {Pin(53, 39, 60, p, PinType::Diagonal)}
         //pinned: 51, 43, 44, 45,  53
         //from: 48, 25, 4, 31, 55
         //to: 52
@@ -251,7 +252,8 @@ TEST_CASE("Test Pinned Piece Detection"){
         "rnb1k1n1/ppp1qppp/8/4P3/3P4/2P2N2/P1P2PPP/R1BQKB1R w KQkq - 0 1",
         "rnb1k1n1/ppp1qppp/8/4P3/1b1P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq",
         "rnb1k1n1/ppp1qppp/8/4P3/1b1P4/2N2N2/PPPBBPPP/R2QK2R b KQkq - 0 1",
-        "4r3/8/8/1b5b/3n4/3PPP2/q2PKP1r/8 b - - 0 1"
+        "4r3/8/8/1b5b/3n4/3PPP2/q2PKP1r/8 b - - 0 1",
+        "rnb1kbnr/ppp2ppp/8/3pp3/3PP2q/8/PPP2PPP/RNBQKBNR w KQkq - 0 1"
     };
 
 
@@ -261,8 +263,8 @@ TEST_CASE("Test Pinned Piece Detection"){
 
     for(size_t i = 0; i < boards.size(); i++){
         Position testPosition(boards[i]);
-        testPosition.generateAllValidMovesForSide(Side::w);
         testPosition.generateAllValidMovesForSide(Side::b);
+        testPosition.generateAllValidMovesForSide(Side::w);
         std::vector<Pin> detectedPins = testPosition.getPins();
         REQUIRE(detectedPins.size() == pins[i].size());
         int count = 0;
@@ -633,6 +635,29 @@ TEST_CASE("Check resolution - pinned piece cannot resolve checks"){
     REQUIRE(BishopC1.size() == 1);
     REQUIRE(BishopF1.size() == 1);
     REQUIRE(QueenD1.size() == 1);
+}
+
+TEST_CASE("Test Move Sequences"){
+    Game game;
+    Position p = game.getPosition();
+    Piece pawn(PieceType::P, Color::w);
+    Piece& pn = pawn;
+
+    std::vector<std::string> testMoves = {"e2 e4", "e7 e5", "d2 d4", "d7 d5", "b1 c3", "d8 h4", "f2 f3"};
+    std::vector<std::vector<Pin>> expectedPins = {{}, {}, {}, {}, {}, {}, {Pin(53, 39, 60, pn, PinType::Diagonal)}};
+   //REQUIRE(expectedPins.size() == testMoves.size());
+    for(auto i = 0; i < testMoves.size(); i++){
+        p.makeMove(game.moveStringToMove(testMoves[i]));
+        p.getBoard().printBoard();
+        if(!expectedPins[i].empty()){
+            REQUIRE(!p.getPins().empty());
+            REQUIRE(expectedPins[i] == p.getPins());
+        }
+        else{
+            REQUIRE(p.getPins().empty());
+        }
+    }
+    //game.testGameWithInput(testMoves, );
 }
 
 /*bool Position::testDiagonalIntersects(){

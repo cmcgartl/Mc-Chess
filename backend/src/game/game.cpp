@@ -11,6 +11,14 @@ Game::Game(){
     p.generateAllValidMovesForSide(Side::w);
 }
 
+template<typename Func>
+void Game::testGameWithInput(std::vector<std::string> moves, Func testFunc){
+    for(const auto& move : moves){
+        p.makeMove(moveStringToMove(move));
+        testFunc();
+    }
+}
+
 int stringToSquare(std::string_view squareString){
     if(squareString.length() != 2){
         return -1;
@@ -53,6 +61,7 @@ void Game::run(){
 
         std::cout << "enter your move (c3 f3)" << '\n';
         std::getline(std::cin, input);
+
 
         p.makeMove(moveStringToMove(input));
         

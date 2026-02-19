@@ -28,7 +28,7 @@ class Position{
 
         void generateAllValidMovesForSide(Side side);
         void generateValidMoves(int square);
-        void getValidMovesPawn(int& count, int square); 
+        void getValidMovesPawn(int& count, int squar, std::vector<int>& pinDirections); 
         void getValidMovesKnight(int& count, int square);
         std::vector<Move> getValidMovesForPieceAt(int square) const;
         bool moveStopsCheck(Move& move, std::vector<int>& attackingSquares);

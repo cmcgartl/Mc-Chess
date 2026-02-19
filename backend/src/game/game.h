@@ -15,7 +15,10 @@ class Game {
 
         GameResult getResult(){return res;}
         Move moveStringToMove(std::string_view MoveString);
+        Position& getPosition(){return p;}
 
+        template<typename Func>
+        void testGameWithInput(std::vector<std::string> moves, Func testFunc);
 
     private:
         Position p;
