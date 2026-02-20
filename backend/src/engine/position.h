@@ -67,6 +67,16 @@ class Position{
         void generateOrthoganalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections);
         void generateCheckResolutions(int square, Color color);
 
+        bool kingHasMovedWhite = false;
+        bool kingHasMovedBlack = false;
+        bool rookLeftHasMovedWhite = false;
+        bool rookRightHasMovedWhite = false;
+        bool rookRightHasMovedBlack = false;
+        bool rookRightHasMovedBlack = false;
+        
+        
+        
+
 
 
         //whiteMoveStarts

@@ -479,6 +479,35 @@ void Position::generateValidMoves(int square){
         piece = "Rook";
     }
 
+    bool canCastle = true;
+    auto castleLambda = [this, &pColor, &canCastle](int sq){
+        if((sq % 8) == 0 || sq % 8 == 0){
+            return true;
+        }
+        if(board.at(sq).type != PieceType::None){
+            canCastle = false;
+            return true;
+        }
+        if(isSquareAttacked(sq, pColor)){
+            canCastle = false;
+            return true;
+        }
+    };
+
+    if(pColor == Color::w){
+        if(!kingHasMovedWhite){
+            if(!rookLeftHasMovedWhite){
+                bool canCastle = true;
+                if(squaresAttackingWhiteKing.size() == 0){
+                    walkDirectionsAndDo(square, {-1}, false, castleLambda);
+                    if(canCastle){
+                        //add the move
+                    }
+                }
+            }
+        }
+    }
+
     std::vector<Pin*> pins = p.pins;
     switch(p.type){
         case PieceType::P:
