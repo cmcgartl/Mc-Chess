@@ -14,6 +14,15 @@ class Game {
         void run();
 
         GameResult getResult(){return res;}
+        std::string getResultString() const {
+            switch(res){
+                case GameResult::InProgress: return "in_progress";
+                case GameResult::WhiteWin: return "white_win";
+                case GameResult::BlackWin: return "black_win";
+                case GameResult::Stalemate: return "stalemate";
+            }
+            return "unknown";
+        }
         Move moveStringToMove(std::string_view MoveString);
         bool makeMove(const std::string& from, const std::string& to);
         void reset();

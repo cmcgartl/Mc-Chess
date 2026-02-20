@@ -3,10 +3,18 @@
 #include "game.h"
 #include "position.h"
 #include "crow.h"
+#include "crow/middlewares/cors.h"
 #include "nlohmann/json.hpp"
 
+crow::response retrieveGameState(Game& game);
+
 int main(){
-    crow::SimpleApp app;
+    crow::App<crow::CORSHandler> app;
+    auto& cors = app.get_middleware<crow::CORSHandler>();
+    cors.global()
+        .origin("http://localhost:5173")
+        .methods("GET"_method, "POST"_method)
+        .headers("Content-Type");
 
     Game game;
 
@@ -15,10 +23,37 @@ int main(){
         return "Hello from Crow!";
     });
 
-    CROW_ROUTE(app, "/startGame")
+    CROW_ROUTE(app, "/startGame").methods(crow::HTTPMethod::GET)
     ([&game](){
+        return retrieveGameState(game);
+    });
 
-        //get the FEN representation of the position
+    CROW_ROUTE(app, "/makeMove").methods(crow::HTTPMethod::POST)
+    ([&game](const crow::request& req){
+        auto body = crow::json::load(req.body);
+
+        std::string from = body["from"].s();
+        std::string to = body["to"].s();
+        if(game.makeMove(from, to)){  
+            return retrieveGameState(game);
+        }
+
+        return crow::response(400, "Invalid Move");
+        
+    });
+
+    CROW_ROUTE(app, "/reset").methods(crow::HTTPMethod::POST)
+    ([&game](){
+        game = Game();
+
+        return retrieveGameState(game);
+    });
+
+
+    app.port(18080).run();
+}
+
+crow::response retrieveGameState(Game& game){
         Position& p = game.getPosition();
         std::string FEN = p.getBoard().toFEN();
 
@@ -26,7 +61,8 @@ int main(){
         nlohmann::json response;
         nlohmann::json legalMoves = nlohmann::json::object();
         response["FEN"] = FEN;
-        response["turn"] = "w";
+        response["turn"] = (p.getSideToMove() == Side::w) ? "w" : "b";
+        response["status"] = game.getResultString();
         
         //fill legal moves with string representations
         for(const auto& move : game.getPosition().getPossibleMoves()){
@@ -37,15 +73,8 @@ int main(){
 
         response["legalMoves"] = legalMoves;
 
-        //serialize JSON object into JSON string
-        crow::response res(200, response.dump());
-
-        //set header to indicate it is transferring JSON formatted data
+        crow::response res(200,response.dump());
         res.set_header("Content-Type", "application/json");
+
         return res;
-    });
-
-    app.port(18080).run();
-
-
-}
+    };

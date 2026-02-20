@@ -1,6 +1,8 @@
-import {useState, useCallback} from "react"
-import { Chess } from "chess.js"
+import {useState, useCallback, useEffect} from "react"
+//import { Chess } from "chess.js"
 import { Chessboard } from "react-chessboard"
+import { type GameState } from "../services/api"
+import {startGame, makeMove, resetGame} from "../services/api"
 
 const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -66,44 +68,35 @@ const moveItemStyle: React.CSSProperties = {
 }
 
 const ChessGame = () => {
-    const [game, setGame] = useState(new Chess())
+    const [game, setGame] = useState<GameState>();
+
+    useEffect(() => {
+        startGame().then(state => setGame(state))
+    }, [])
+
     const [moveLog, setMoveLog] = useState<string[]>([])
 
     const getGameStatus = () => {
-        if(game.isGameOver()){
-            if(game.isCheckmate()) return 'Checkmate!'
-            if(game.isStalemate()) return 'Stalemate!'
-            if(game.isDraw()) return 'Draw!'
-
-            return 'Game Over!'
-        }
-
-        if(game.inCheck()) return 'Check!'
-
-        return `${game.turn() === 'w' ? 'White' : 'Black'} to move`
+        return game?.status
     }
 
-    const resetGame = () => {
-        setGame(new Chess())
-        setMoveLog([])
+    const reset = () => {
+        resetGame()
+            .then(state => {
+                setGame(state)
+                setMoveLog([])
+            })
     }
 
     const onDrop = useCallback(({ sourceSquare, targetSquare }: { piece: unknown; sourceSquare: string; targetSquare: string | null }) => {
         if (!targetSquare) return false
         try{
-            const move = game.move({
-                from: sourceSquare,
-                to: targetSquare,
-                promotion: 'q'
-            })
-
-            if(move){
-                setGame(new Chess(game.fen()))
-                const moveNotation = `${game.turn() === 'w' ? 'White' : 'Black'}: ${move.san}`
-                setMoveLog(prev => [...prev, moveNotation])
-
-                return true
-            }
+            makeMove(sourceSquare, targetSquare)
+                .then(state => {
+                    setGame(state);
+                    const moveNotation = `${game?.turn === 'w' ? 'White' : 'Black'}: ${sourceSquare}${targetSquare}`
+                    setMoveLog(prev => [...prev, moveNotation])
+                }).catch(() => {})
         } catch(error){
             return false
         }
@@ -118,7 +111,7 @@ const ChessGame = () => {
                     {getGameStatus()}
                 </div>
                 <Chessboard options={{
-                    position: game.fen(),
+                    position: game?.FEN,
                     onPieceDrop: onDrop,
                     boardStyle: {
                         borderRadius: '4px',
@@ -133,7 +126,7 @@ const ChessGame = () => {
                 }} />
 
                     <button
-                        onClick={resetGame}
+                        onClick={reset}
                         style={buttonStyle}
                         onMouseOver={e => (e.target as HTMLButtonElement).style.backgroundColor = '#1976d2'}
                         onMouseOut={e => (e.target as HTMLButtonElement).style.backgroundColor = '#2196f3'}
