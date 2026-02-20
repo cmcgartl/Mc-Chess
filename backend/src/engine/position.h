@@ -44,11 +44,13 @@ class Position{
         Side getSideToMove() const {return sideToMove;}
         void setSideToMove(Side side) {sideToMove = side;}
         const Board& getBoard() const {return board;}
-        void makeMove(const Move& move);
+        bool makeMove(const Move& move);
+        std::string toFEN() const;
 
         template<size_t N, typename Func>
         void walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func);
         bool isSquareAttacked(int square, Color color);
+        std::vector<Move>& getPossibleMoves(){return possibleMoves;}
 
     private:
         Board board;

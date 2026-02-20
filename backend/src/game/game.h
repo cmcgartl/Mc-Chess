@@ -15,7 +15,10 @@ class Game {
 
         GameResult getResult(){return res;}
         Move moveStringToMove(std::string_view MoveString);
+        bool makeMove(const std::string& from, const std::string& to);
+        void reset();
         Position& getPosition(){return p;}
+        std::string squareToAlgebraic(int square);
 
         template<typename Func>
         void testGameWithInput(std::vector<std::string> moves, Func testFunc);

@@ -334,7 +334,6 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                 break;
             }
 
-
             //determine if the current direction is a restricted direction due to a pin
             if(p.pinnedO){
                 bool restrictedDirection = true;
@@ -747,7 +746,8 @@ bool Position::isSquareAttacked(int square, Color color){
     return attacked;
 }
 
-bool Position::makeMove(const Move& move){
+//TODO: issue with who generating what moves
+void Position::makeMove(const Move& move){
     Side opponentSide = (sideToMove == Side::w) ? Side::b : Side::w;
     generateAllValidMovesForSide(opponentSide);
     possibleMoves.clear();
@@ -766,7 +766,8 @@ bool Position::makeMove(const Move& move){
     }
 
     if(!found){
-        return false;
+        std::cout << "Move from " << std::to_string(move.from) << " to " << std::to_string(move.to) << " not found :(" << std::endl;
+        return;
     }
 
     board.movePiece(move.from, move.to);
@@ -782,7 +783,7 @@ bool Position::makeMove(const Move& move){
         piece.pinnedO = false;
     }
 
-    sideToMove = (sideToMove == Side::w) ? Side::b : Side::w;
+    sideToMove == Side::w ? sideToMove = Side::b : sideToMove = Side::w;
 
     generatePieceLists();
 
@@ -793,26 +794,9 @@ bool Position::makeMove(const Move& move){
     squaresAttackingBlackKing.clear();
     squaresAttackingWhiteKing.clear();
 
-    // Generate opponent moves for attack/pin data
-    opponentSide = (sideToMove == Side::w) ? Side::b : Side::w;
-    generateAllValidMovesForSide(opponentSide);
+    // Generate current side's moves using the attack data
+    //generateAllValidMovesForSide(sideToMove);
 
-    // Clear move data but keep attack/pin info
-    possibleMoves.clear();
-    moveStartIndices.fill(-1);
-    moveCounts.fill(-1);
-
-    // Generate current side's legal moves
-    generateAllValidMovesForSide(sideToMove);
-
-    return true;
-}
-
-std::string Position::toFEN() const {
-    std::string fen = board.toFEN();
-    fen += (sideToMove == Side::w) ? " w" : " b";
-    fen += " - - 0 1";
-    return fen;
 }
 
 //determining checks

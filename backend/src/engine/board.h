@@ -17,6 +17,7 @@ public:
     int whiteKingSquare;
     int blackKingSquare;
     std::array<Piece, 64>& getSquares() {return squares;}
+    std::string toFEN() const;
 
 private:
     std::array<Piece, 64> squares;

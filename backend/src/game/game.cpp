@@ -51,6 +51,31 @@ Move Game::moveStringToMove(std::string_view MoveString){
     return Move(stringToSquare(sub1), stringToSquare(sub2));
 }
 
+std::string Game::squareToAlgebraic(int square) {
+    if (square < 0 || square > 63) return "??";
+    char file = 'a' + (square % 8);
+    char rank = '0' + (8 - square / 8);
+    return std::string(1, file) + std::string(1, rank);
+}
+
+bool Game::makeMove(const std::string& from, const std::string& to) {
+    int fromSq = stringToSquare(from);
+    int toSq = stringToSquare(to);
+    if (fromSq < 0 || toSq < 0) return false;
+    Move move(static_cast<uint8_t>(fromSq), static_cast<uint8_t>(toSq));
+    bool success = p.makeMove(move);
+    if (success) moveHistory.push_back(move);
+    return success;
+}
+
+void Game::reset() {
+    p = Position();
+    moveHistory.clear();
+    res = GameResult::InProgress;
+    p.setSideToMove(Side::w);
+    p.generateAllValidMovesForSide(Side::w);
+}
+
 void Game::run(){
     while(res == GameResult::InProgress){
 

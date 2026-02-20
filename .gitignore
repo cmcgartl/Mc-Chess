@@ -3,6 +3,7 @@
 *.d
 chess
 tests_runner
+build/
 
 # Debug / OS files
 .DS_Store

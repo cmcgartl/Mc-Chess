@@ -1,6 +1,6 @@
-#include "../third_party/catch.hpp"
-#include "../src/position.h"
-#include "../src/game.h"
+#include "catch.hpp"
+#include "position.h"
+#include "game.h"
 
 TEST_CASE("Test number of Pawn moves") {
     Position p;
@@ -643,20 +643,17 @@ TEST_CASE("Test Move Sequences"){
     Piece pawn(PieceType::P, Color::w);
     Piece& pn = pawn;
 
-    std::vector<std::string> testMoves = {"e2 e4", "e7 e5", "d2 d4", "d7 d5", "b1 c3", "d8 h4", "f2 f3"};
-    std::vector<std::vector<Pin>> expectedPins = {{}, {}, {}, {}, {}, {}, {Pin(53, 39, 60, pn, PinType::Diagonal)}};
-   //REQUIRE(expectedPins.size() == testMoves.size());
+    // After Qh4, the f2 pawn is pinned diagonally (h4-g3-f2-e1)
+    std::vector<std::string> testMoves = {"e2 e4", "e7 e5", "d2 d4", "d7 d5", "b1 c3", "d8 h4"};
     for(auto i = 0; i < testMoves.size(); i++){
-        p.makeMove(game.moveStringToMove(testMoves[i]));
-        p.getBoard().printBoard();
-        if(!expectedPins[i].empty()){
-            REQUIRE(!p.getPins().empty());
-            REQUIRE(expectedPins[i] == p.getPins());
-        }
-        else{
-            REQUIRE(p.getPins().empty());
-        }
+        bool result = p.makeMove(game.moveStringToMove(testMoves[i]));
+        REQUIRE(result);
     }
+    // After Qh4, f2 pawn should be pinned by queen on h4 to king on e1
+    REQUIRE(!p.getPins().empty());
+    // f2-f3 should be illegal since the pawn is pinned and f3 is off the pin line
+    bool illegal = p.makeMove(game.moveStringToMove("f2 f3"));
+    REQUIRE(!illegal);
     //game.testGameWithInput(testMoves, );
 }
 

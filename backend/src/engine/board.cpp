@@ -127,6 +127,39 @@ Piece& Board::at(int square){
     }
 }
 
+std::string Board::toFEN() const {
+    std::string fen;
+    for (int rank = 0; rank < 8; rank++) {
+        int emptyCount = 0;
+        for (int file = 0; file < 8; file++) {
+            const Piece& p = squares[rank * 8 + file];
+            if (p.type == PieceType::None) {
+                emptyCount++;
+            } else {
+                if (emptyCount > 0) {
+                    fen += std::to_string(emptyCount);
+                    emptyCount = 0;
+                }
+                char c;
+                switch (p.type) {
+                    case PieceType::P: c = 'p'; break;
+                    case PieceType::N: c = 'n'; break;
+                    case PieceType::B: c = 'b'; break;
+                    case PieceType::R: c = 'r'; break;
+                    case PieceType::Q: c = 'q'; break;
+                    case PieceType::K: c = 'k'; break;
+                    default: c = '?'; break;
+                }
+                if (p.color == Color::w) c = std::toupper(c);
+                fen += c;
+            }
+        }
+        if (emptyCount > 0) fen += std::to_string(emptyCount);
+        if (rank < 7) fen += '/';
+    }
+    return fen;
+}
+
 void Board::printSquareValues() const{
         for(int row = 0; row < 8; row++){
         std::cout << "---------------------------------" << std::endl;
