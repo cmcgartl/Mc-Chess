@@ -5,7 +5,7 @@
 #include "pin.h"
 #include "position.h"
 
-enum class GameResult {InProgress, WhiteWin, BlackWin, Stalemate} ;
+enum class GameResult {InProgress, WhiteWin, BlackWin, Draw};
 
 class Game {
     public:
@@ -16,10 +16,10 @@ class Game {
         GameResult getResult(){return res;}
         std::string getResultString() const {
             switch(res){
-                case GameResult::InProgress: return "in_progress";
-                case GameResult::WhiteWin: return "white_win";
-                case GameResult::BlackWin: return "black_win";
-                case GameResult::Stalemate: return "stalemate";
+                case GameResult::InProgress: return "Game In Progress";
+                case GameResult::WhiteWin: return "Checkmate! White Wins!";
+                case GameResult::BlackWin: return "Checkmate! Black Wins!";
+                case GameResult::Draw: return "draw";
             }
             return "unknown";
         }

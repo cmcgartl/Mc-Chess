@@ -2,15 +2,16 @@
 #include <iostream>
 #include "piece.h"
 #include <array>
+#include "move.h"
 
 
-class Board{
+class Board {
 public:
     Board();
     Board(const std::string& FEN);
     void printBoard() const;
     Piece& at(int square);
-    void movePiece(int src, int dest);
+    void movePiece(const Move& move);
     void clearBoard();
     void verifyFEN(const std::string& FEN) const;
     void printSquareValues() const;

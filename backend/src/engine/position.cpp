@@ -480,30 +480,52 @@ void Position::generateValidMoves(int square){
     }
 
     bool canCastle = true;
-    auto castleLambda = [this, &pColor, &canCastle](int sq){
-        if((sq % 8) == 0 || sq % 8 == 0){
+    auto castleLambda = [this, &pColor, &canCastle, &square, &count](int sq){
+        std::cout << "called castle lambda checking square: " << std::to_string(sq) << std::endl;
+        if((sq % 8) == 0){
+            std::cout << "found we can castle long at square: " << std::to_string(sq) << std::endl;
+            possibleMoves.push_back(Move(square, sq + 2, MoveType::CastleLong));
+            count++;
             return true;
         }
+        if((sq % 8) == 7){
+            std::cout << "found we can castle short at square: " << std::to_string(sq) << std::endl;
+            possibleMoves.push_back(Move(square, sq - 1, MoveType::CastleShort));
+            count++;
+            return true;
+        }
+
         if(board.at(sq).type != PieceType::None){
+            std::cout << "found a piece at square: " << std::to_string(sq) << std::endl;
             canCastle = false;
             return true;
         }
-        if(isSquareAttacked(sq, pColor)){
+        if((std::abs(sq - square) <= 2) && isSquareAttacked(sq, pColor)){
+            std::cout << "square: " << std::to_string(sq) << "is attacked" << std::endl;
             canCastle = false;
             return true;
         }
+        return false;
     };
 
-    if(pColor == Color::w){
-        if(!kingHasMovedWhite){
+
+    if(pColor == Color::w && p.type == PieceType::K){
+        if(!kingHasMovedWhite && squaresAttackingWhiteKing.size() == 0){
             if(!rookLeftHasMovedWhite){
-                bool canCastle = true;
-                if(squaresAttackingWhiteKing.size() == 0){
-                    walkDirectionsAndDo(square, {-1}, false, castleLambda);
-                    if(canCastle){
-                        //add the move
-                    }
-                }
+                 walkDirectionsAndDo(square, {-1}, false, castleLambda);
+            }
+            if(!rookRightHasMovedWhite){
+                 walkDirectionsAndDo(square, {1}, false, castleLambda);
+            }
+        }
+    }
+    else if (pColor == Color::b && p.type == PieceType::K){
+        if(!kingHasMovedBlack && squaresAttackingBlackKing.size() == 0){
+            if(!rookLeftHasMovedBlack){
+                 walkDirectionsAndDo(square, {-1}, false, castleLambda);
+            }
+            if(!rookRightHasMovedBlack){
+                 walkDirectionsAndDo(square, {1}, false, castleLambda);
             }
         }
     }
@@ -778,27 +800,55 @@ bool Position::isSquareAttacked(int square, Color color){
 
 bool Position::makeMove(const Move& move){
     Side opponentSide = (sideToMove == Side::w) ? Side::b : Side::w;
-    generateAllValidMovesForSide(opponentSide);
-    possibleMoves.clear();
-    moveStartIndices.fill(-1);
-    moveCounts.fill(-1);
+    //generateAllValidMovesForSide(opponentSide);
+    //possibleMoves.clear();
+    //moveStartIndices.fill(-1);
+    //moveCounts.fill(-1);
 
-    generateAllValidMovesForSide(sideToMove);
+   //generateAllValidMovesForSide(sideToMove);
 
     int start = moveStartIndices[move.from];
     int end = start + moveCounts[move.from];
-    bool found = false;
+    Move*  matchedMove = nullptr;
     for(int i = start; i < end; i++){
         if(possibleMoves[i] == move){
-            found = true;
+            matchedMove = &possibleMoves[i];
         }
     }
 
-    if(!found){
+    if(matchedMove == nullptr){
         return false;
     }
 
-    board.movePiece(move.from, move.to);
+    board.movePiece(*matchedMove);
+
+    if(sideToMove == Side::w){
+        if(board.at(move.from).type == PieceType::K){
+            kingHasMovedWhite = true;
+        }
+        if(board.at(move.from).type == PieceType::R){
+            if((move.from % 8) == 0){
+                rookLeftHasMovedWhite = true;
+            }
+            if((move.from % 8) == 7){
+                rookRightHasMovedWhite = true;
+            }
+        }
+    }
+    else{
+        if(board.at(move.from).type == PieceType::K){
+            kingHasMovedBlack = true;
+        }
+        if(board.at(move.from).type == PieceType::R){
+            if((move.from % 8) == 0){
+                rookLeftHasMovedBlack = true;
+            }
+            if((move.from % 8) == 7){
+                rookRightHasMovedBlack = true;
+            }
+        }
+    }
+
     possibleMoves.clear();
     moveStartIndices.fill(-1);
     moveCounts.fill(0);
@@ -834,6 +884,20 @@ bool Position::makeMove(const Move& move){
     // Generate current side's legal moves
     generateAllValidMovesForSide(sideToMove);
 
+    if(possibleMoves.size() == 0){
+        bool inCheck;
+        sideToMove == Side::w? 
+            inCheck = squaresAttackingWhiteKing.size() != 0 :
+            inCheck = squaresAttackingBlackKing.size() != 0;
+        
+        if(inCheck){
+            status = PositionStatus::CheckMate;
+        }
+        else{
+            status = PositionStatus::Stalemate;
+        }
+    }
+
     return true;
 }
 
@@ -842,6 +906,10 @@ std::string Position::toFEN() const {
     fen += (sideToMove == Side::w) ? " w" : " b";
     fen += " - - 0 1";
     return fen;
+}
+
+void Position::undoMove(const Move& move){
+    
 }
 
 //determining checks

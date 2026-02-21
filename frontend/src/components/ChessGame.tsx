@@ -9,8 +9,9 @@ const containerStyle: React.CSSProperties = {
     gap: '30px',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    padding: '40px',
-    minHeight: '100vh',
+    padding: '20px',
+    height: '100vh',
+    boxSizing: 'border-box',
     backgroundColor: '#1a1a2e',
     color: '#eee',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -69,6 +70,8 @@ const moveItemStyle: React.CSSProperties = {
 
 const ChessGame = () => {
     const [game, setGame] = useState<GameState>();
+    const [square, setSquare] = useState<number>();
+    const [highlightStyles, setHighlightStyles] = useState<Record<string, React.CSSProperties>>({})
 
     useEffect(() => {
         startGame().then(state => setGame(state))
@@ -88,9 +91,25 @@ const ChessGame = () => {
             })
     }
 
+   const onDrag = useCallback(({ square }: { isSparePiece: boolean; piece: {pieceType: string}; square: string | null}) => {
+        if(square && game){
+            const moves = game.legalMoves[square]
+            if(moves){
+                const styles: Record<string, React.CSSProperties> = {}
+                moves.forEach(move => {
+                    styles[move] = { backgroundColor: 'rgba(255, 255, 0, 0.4)' }
+                })
+                setHighlightStyles(styles)
+            }
+        }
+}, [game])
+
     const onDrop = useCallback(({ sourceSquare, targetSquare }: { piece: unknown; sourceSquare: string; targetSquare: string | null }) => {
+        setHighlightStyles({})
         if (!targetSquare) return false
         try{
+            const legalMoves = game?.legalMoves[sourceSquare]
+            if(!legalMoves || !legalMoves.includes(targetSquare)) return false
             makeMove(sourceSquare, targetSquare)
                 .then(state => {
                     setGame(state);
@@ -110,9 +129,13 @@ const ChessGame = () => {
                 <div style={statusStyle}>
                     {getGameStatus()}
                 </div>
+                <div style={{width: '500px'}}>
                 <Chessboard options={{
                     position: game?.FEN,
+                    onPieceDrag: onDrag,
                     onPieceDrop: onDrop,
+                    showAnimations: false,
+                    squareStyles: highlightStyles,
                     boardStyle: {
                         borderRadius: '4px',
                         boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
@@ -124,6 +147,7 @@ const ChessGame = () => {
                         backgroundColor: "#edeed1"
                     },
                 }} />
+                </div>
 
                     <button
                         onClick={reset}

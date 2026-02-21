@@ -6,9 +6,8 @@
 
 Game::Game(){
     res = GameResult::InProgress;
-
     p.setSideToMove(Side::w);
-    p.generateAllValidMovesForSide(Side::w);
+    p.generateAllValidMovesForSide(Side::w);;
 }
 
 template<typename Func>
@@ -65,6 +64,15 @@ bool Game::makeMove(const std::string& from, const std::string& to) {
     Move move(static_cast<uint8_t>(fromSq), static_cast<uint8_t>(toSq));
     bool success = p.makeMove(move);
     if (success) moveHistory.push_back(move);
+    PositionStatus status = p.getStatus();
+    if(status == PositionStatus::CheckMate){
+        p.getSideToMove() == Side::w?
+            res = GameResult::BlackWin :
+            res = GameResult::WhiteWin;
+    }
+    else if(status == PositionStatus::Stalemate || status == PositionStatus::MoveDraw){
+        res = GameResult::Draw;
+    }
     return success;
 }
 

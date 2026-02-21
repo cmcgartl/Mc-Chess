@@ -101,21 +101,40 @@ bool Board::isNum(char c){
 
 //naive move piece function: will move a piece from any valid starting location
 //to any valid destination location, whether or not that move is valid
-void Board::movePiece(int src, int dest){
-    if(src < 0 || src >= 64 || dest < 0 ||  dest >= 64){
+void Board::movePiece(const Move& move){
+    if(move.type == MoveType::CastleLong){
+        std::cout << "about to try to castle long" << std::endl;
+    }
+    if(move.type == MoveType::CastleShort){
+        std::cout << "about to try to castle short" << std::endl;
+    }
+    if(move.from < 0 || move.from>= 64 || move.to < 0 ||  move.to >= 64){
         throw std::out_of_range("Board::movePiece: index out of range");
     }
-    if(squares[src].type == PieceType::None){
+    if(squares[move.from].type == PieceType::None){
         throw std::logic_error("Board::movePiece: no piece at source square");
     }
 
-    if(squares[src].type == PieceType::K){
-        if(squares[src].color == Color::w) whiteKingSquare = dest;
-        else blackKingSquare = dest;
+
+    if(squares[move.from].type == PieceType::K){
+        if(squares[move.from].color == Color::w) whiteKingSquare = move.to;
+        else blackKingSquare = move.to;
     }
 
-    squares[dest] = squares[src];
-    squares[src] = Piece{};
+    squares[move.to] = squares[move.from];
+    squares[move.from] = Piece{};
+
+    if(move.type == MoveType::CastleLong){
+        std::cout << "trying to castle Long" << std::endl;
+        Move rookMove((move.to -2), (move.to + 1));
+        movePiece(rookMove);
+    }
+
+    if(move.type == MoveType::CastleShort){
+        std::cout << "trying to castle short" << std::endl;
+        Move rookMove((move.to + 1), (move.to - 1));
+        movePiece(rookMove);
+    }
 }
 
 Piece& Board::at(int square){

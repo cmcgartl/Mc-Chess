@@ -14,13 +14,16 @@ export async function startGame(): Promise<GameState> {
 }
 
 export async function makeMove(from: string, to: string): Promise<GameState> {
+  
   const res = await fetch(`${BASE_URL}/makeMove`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ from, to }),
   });
   if (!res.ok) throw new Error("Invalid move");
-  return res.json();
+  const data = await res.json();
+  console.log(data);
+  return data;
 }
 
 export async function resetGame(): Promise<GameState> {

@@ -7,6 +7,8 @@
 
 enum class Side {w, b};
 
+enum class PositionStatus{InProgress, CheckMate, Stalemate, MoveDraw};
+
 class Position{
     public:
         Position():board(START_FEN) , sideToMove(Side::w){
@@ -51,6 +53,9 @@ class Position{
         void walkDirectionsAndDo(int startSquare, const int (&directions)[N], bool limitedMovementPiece, Func func);
         bool isSquareAttacked(int square, Color color);
         std::vector<Move>& getPossibleMoves(){return possibleMoves;}
+        const PositionStatus getStatus() const {return status;}
+
+        void undoMove(const Move& move);
 
     private:
         Board board;
@@ -71,8 +76,10 @@ class Position{
         bool kingHasMovedBlack = false;
         bool rookLeftHasMovedWhite = false;
         bool rookRightHasMovedWhite = false;
+        bool rookLeftHasMovedBlack = false;
         bool rookRightHasMovedBlack = false;
-        bool rookRightHasMovedBlack = false;
+
+        PositionStatus status = PositionStatus::InProgress;
         
         
         
