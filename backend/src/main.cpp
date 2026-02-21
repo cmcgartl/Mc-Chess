@@ -65,7 +65,7 @@ crow::response retrieveGameState(Game& game){
         response["status"] = game.getResultString();
         
         //fill legal moves with string representations
-        for(const auto& move : game.getPosition().getPossibleMoves()){
+        for(const auto& move : game.getCurrentMoves().moves){
             std::string from = game.squareToAlgebraic(move.from);
             std::string to = game.squareToAlgebraic(move.to);
             legalMoves[from].push_back(to);

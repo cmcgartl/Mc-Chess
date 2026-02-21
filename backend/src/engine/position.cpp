@@ -24,7 +24,7 @@ DirectionSet getDirections(PieceType type, Color color) {
         case PieceType::R: return {OrthoganalDirections, 4, false};
         case PieceType::Q: return {DiagonalDirections, 4, false}; // need both, see below
         case PieceType::N: return {KnightMoves, 8, true};
-        case PieceType::P: return color == Color::w 
+        case PieceType::P: return color == Color::w
             ? DirectionSet{pawnAttackerDirectionsWhite, 2, true}
             : DirectionSet{pawnAttackerDirectionsBlack, 2, true};
         default: return {nullptr, 0, false};
@@ -133,7 +133,7 @@ void Position::generatePieceLists(){
     }
 }
 
-void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDirections){
+void Position::getValidMovesPawn(int& count, int square, MoveGenResult& result){
     if(square < 0 || square >= 64){
         throw std::out_of_range("Position::getValidMovesPawn: provided square is out of range");
     }
@@ -142,12 +142,10 @@ void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDi
         throw std::logic_error("Position::getValidMovesPawn: generating moves for incorrect piece at square" + std::to_string(square));
     }
 
-    auto dirAllowed = [&pinDirections](int dir){
-        if(pinDirections.empty()) return true;
-        for(int pd : pinDirections){
-            if(pd == dir || pd == -dir) return true;
-        }
-        return false;
+    const PinInfo& pin = result.pins[square];
+    auto dirAllowed = [&pin](int dir){
+        if(pin.pinDirection == 0) return true;
+        return (pin.pinDirection == dir || pin.pinDirection == -dir);
     };
 
     if(p.color == Color::w){
@@ -157,12 +155,12 @@ void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDi
         int captureRight = (square - 8) + 1;
         if(dirAllowed(-8) && oneForward >= 0){
             if(board.at(oneForward).type == PieceType::None){
-                possibleMoves.push_back(Move(square, oneForward));
+                result.moves.push_back(Move(square, oneForward));
                 count++;
 
                 if(square >= 48 && square <= 55){
                     if(board.at(twoForward).type == PieceType::None){
-                        possibleMoves.push_back(Move(square, twoForward));
+                        result.moves.push_back(Move(square, twoForward));
                         count++;
                     }
                 }
@@ -170,22 +168,22 @@ void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDi
         }
         if(dirAllowed(-9) && captureLeft >= 0 && ((square % 8) != 0)){
             if(board.at(captureLeft).color == Color::b){
-                possibleMoves.push_back(Move(square, captureLeft));
+                result.moves.push_back(Move(square, captureLeft));
                 if(board.at(captureLeft).type == PieceType::K){
                     p.color == Color::w ?
-                        squaresAttackingBlackKing.push_back(square) :
-                        squaresAttackingWhiteKing.push_back(square);
+                        result.attacksOnBlackKing.push_back(square) :
+                        result.attacksOnWhiteKing.push_back(square);
                 }
                 count++;
             }
         }
         if(dirAllowed(-7) && captureRight >= 0 && ((square + 1) % 8 != 0)){
             if(board.at(captureRight).color == Color::b){
-                possibleMoves.push_back(Move(square, captureRight));
+                result.moves.push_back(Move(square, captureRight));
                 if(board.at(captureRight).type == PieceType::K){
                     p.color == Color::w ?
-                        squaresAttackingBlackKing.push_back(square) :
-                        squaresAttackingWhiteKing.push_back(square);
+                        result.attacksOnBlackKing.push_back(square) :
+                        result.attacksOnWhiteKing.push_back(square);
                 }
                 count++;
             }
@@ -198,12 +196,12 @@ void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDi
         int captureRight = square + 8 - 1;
         if(dirAllowed(8) && oneForward <= 63){
             if(board.at(oneForward).type == PieceType::None){
-                possibleMoves.push_back(Move(square, oneForward));
+                result.moves.push_back(Move(square, oneForward));
                 count++;
 
                 if(square >= 8 && square <= 15){
                     if(board.at(twoForward).type == PieceType::None){
-                        possibleMoves.push_back(Move(square, square + 16));
+                        result.moves.push_back(Move(square, square + 16));
                         count++;
                     }
                 }
@@ -211,22 +209,22 @@ void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDi
         }
         if(dirAllowed(7) && captureRight <= 63 && (square % 8 != 0)){
             if(board.at(captureRight).color == Color::w){
-                possibleMoves.push_back(Move(square, captureRight));
+                result.moves.push_back(Move(square, captureRight));
                 if(board.at(captureRight).type == PieceType::K){
                     p.color == Color::w ?
-                        squaresAttackingBlackKing.push_back(square) :
-                        squaresAttackingWhiteKing.push_back(square);
+                        result.attacksOnBlackKing.push_back(square) :
+                        result.attacksOnWhiteKing.push_back(square);
                 }
                 count++;
             }
         }
         if(dirAllowed(9) && captureLeft <= 63 && ((square + 1) % 8 != 0)){
             if(board.at(captureLeft).color == Color::w){
-                possibleMoves.push_back(Move(square, captureLeft));
+                result.moves.push_back(Move(square, captureLeft));
                 if(board.at(captureLeft).type == PieceType::K){
                     p.color == Color::w ?
-                        squaresAttackingBlackKing.push_back(square) :
-                        squaresAttackingWhiteKing.push_back(square);
+                        result.attacksOnBlackKing.push_back(square) :
+                        result.attacksOnWhiteKing.push_back(square);
                 }
                 count++;
             }
@@ -234,8 +232,8 @@ void Position::getValidMovesPawn(int& count, int square, std::vector<int>& pinDi
     }
 }
 
-void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections){
-    Piece p = board.at(square);
+void Position::generateDiagonalMoves(int& count, int square, bool cap, Color color, MoveGenResult& result){
+    const PinInfo& pin = result.pins[square];
     for(int i = 0; i < 4; i++){
         int nextSquare = square;
         bool checkingForPin = false;
@@ -248,17 +246,10 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
                 break;
             }
             nextSquare+= DiagonalDirections[i];
-            
+
             //determine if the current direction is a restricted direction due to a pin
-            if(p.pinnedD){
-                bool restrictedDirection = true;
-                for(size_t j = 0; j < pinDirections.size(); j++){
-                    if(DiagonalDirections[i] == pinDirections[j] ||DiagonalDirections[i] == -pinDirections[j]){
-                        restrictedDirection = false;
-                    }
-                }
-                //if this direction is unavailable due to pin, don't search it
-                if(restrictedDirection){
+            if(pin.pinnedD){
+                if(DiagonalDirections[i] != pin.pinDirection && DiagonalDirections[i] != -pin.pinDirection){
                     break;
                 }
             }
@@ -272,9 +263,18 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
 
             if(p.type == PieceType::None){
                 if(!checkingForPin){
+                    if(board.at(square).type == PieceType::K){
+                        if(!isSquareAttacked(nextSquare, color)){
+                            Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                            result.moves.push_back(m);
+                            count++;
+                        }
+                    }
+                    else{
                     Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                    possibleMoves.push_back(m);
+                    result.moves.push_back(m);
                     count++;
+                    }
                 }
                 if(cap){
                     break;
@@ -283,23 +283,19 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
             else if(p.color != color){
                 if(checkingForPin){
                     if(p.type == PieceType::K){
-                        Piece& piece = board.at(possiblePinSquare);
-                        Pin pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare), PinType::Diagonal);
-                        pins.emplace_back(pin);
-                        piece.pinnedD = true;
-                        piece.pins.push_back(&pins.back());
-                        piece.pinDirections.push_back(DiagonalDirections[i]);
+                        result.pins[possiblePinSquare].pinnedD = true;
+                        result.pins[possiblePinSquare].pinDirection = DiagonalDirections[i];
                     }
                     break;
                 }
                 if(!checkingForPin){
                     Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                    possibleMoves.push_back(m);
+                    result.moves.push_back(m);
                     count++;
                     if(p.type == PieceType::K){
-                        color == Color::w ? 
-                            squaresAttackingBlackKing.push_back(square) :
-                            squaresAttackingWhiteKing.push_back(square);
+                        color == Color::w ?
+                            result.attacksOnBlackKing.push_back(square) :
+                            result.attacksOnWhiteKing.push_back(square);
                             break;
                     }
                     checkingForPin = true;
@@ -316,8 +312,8 @@ void Position::generateDiagonalMoves(int& count, int square, bool cap, Color col
     }
 }
 
-void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color color, std::vector<int>& pinDirections){;
-    Piece p = board.at(square);
+void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color color, MoveGenResult& result){
+    const PinInfo& pin = result.pins[square];
     for(int i = 0; i < 4; i++){
         bool checkingForPin = false;
         int nextSquare = square;
@@ -334,17 +330,9 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
                 break;
             }
 
-
             //determine if the current direction is a restricted direction due to a pin
-            if(p.pinnedO){
-                bool restrictedDirection = true;
-                for(size_t j = 0; j < pinDirections.size(); j++){
-                    if(OrthoganalDirections[i] == pinDirections[j] || OrthoganalDirections[i] == -pinDirections[j]){
-                        restrictedDirection = false;
-                    }
-                }
-                //if this direction is unavailable due to pin, don't search it
-                if(restrictedDirection){
+            if(pin.pinnedO){
+                if(OrthoganalDirections[i] != pin.pinDirection && OrthoganalDirections[i] != -pin.pinDirection){
                     break;
                 }
             }
@@ -352,9 +340,18 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
             Piece p = board.at(nextSquare);
             if(p.type == PieceType::None){
                 if(!checkingForPin){
-                    Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                    possibleMoves.push_back(m);
-                    count++;
+                    if(board.at(square).type == PieceType::K){
+                        if(!isSquareAttacked(nextSquare, color)){
+                            Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                            result.moves.push_back(m);
+                            count++;
+                        }
+                    }
+                    else{
+                        Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                        result.moves.push_back(m);
+                        count++;
+                    }
                 }
                 if(cap){
                     break;
@@ -363,23 +360,19 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
             else if(p.color != color){
                 if(checkingForPin){
                     if(p.type == PieceType::K){
-                        Piece& piece = board.at(possiblePinSquare);
-                        Pin pin(possiblePinSquare, square, nextSquare, board.at(possiblePinSquare), PinType::Orthoganal);
-                        pins.emplace_back(pin);
-                        piece.pinnedO = true;
-                        piece.pins.push_back(&pins.back());
-                        piece.pinDirections.push_back(OrthoganalDirections[i]);
+                        result.pins[possiblePinSquare].pinnedO = true;
+                        result.pins[possiblePinSquare].pinDirection = OrthoganalDirections[i];
                     }
                     break;
                 }
                 if(!checkingForPin){
                     Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                    possibleMoves.push_back(m);
+                    result.moves.push_back(m);
                     count++;
                     if(p.type == PieceType::K){
-                        color == Color::w ? 
-                            squaresAttackingBlackKing.push_back(square) :
-                            squaresAttackingWhiteKing.push_back(square);
+                        color == Color::w ?
+                            result.attacksOnBlackKing.push_back(square) :
+                            result.attacksOnWhiteKing.push_back(square);
                             break;
                     }
                     checkingForPin = true;
@@ -396,7 +389,7 @@ void Position::generateOrthoganalMoves(int& count, int square, bool cap, Color c
     }
 }
 
-void Position::getValidMovesKnight(int& count, int square){
+void Position::getValidMovesKnight(int& count, int square, MoveGenResult& result){
     if(square < 0 || square >= 64){
         throw std::out_of_range("Position::getValidMovesKnight: provided square is out of range");
     }
@@ -411,7 +404,7 @@ void Position::getValidMovesKnight(int& count, int square){
         }
         else if((square - 1) % 8 == 0 && i < 2){ //b file
             continue;
-        }  
+        }
         else if((square + 1) % 8 == 0 && i >= 4){ //h file
             continue;
         }
@@ -423,12 +416,12 @@ void Position::getValidMovesKnight(int& count, int square){
         if(targetSquare >= 0 && targetSquare <= 63){
             Piece p = board.at(targetSquare);
             if(p.color != n.color){
-                possibleMoves.push_back(Move(square, targetSquare));
+                result.moves.push_back(Move(square, targetSquare));
                 count++;
                 if(p.type == PieceType::K){
-                    n.color == Color::w ? 
-                        squaresAttackingBlackKing.push_back(square) :
-                        squaresAttackingWhiteKing.push_back(square);
+                    n.color == Color::w ?
+                        result.attacksOnBlackKing.push_back(square) :
+                        result.attacksOnWhiteKing.push_back(square);
                 }
             }
         }
@@ -441,28 +434,53 @@ bool Position::tryMove(int src, int dest){
     }
 
     //TODO
+    return false;
 }
 
-void Position::generateAllValidMovesForSide(Side side){
-    Color color;
-    side == Side::w ? color = Color::w : color = Color::b;
+MoveGenResult Position::generateAllValidMovesForSide(Side side){
+    MoveGenResult result;
 
-    bool thisSideInCheck = ((color == Color::w && squaresAttackingWhiteKing.size() > 0) || (color == Color::b && squaresAttackingBlackKing.size() > 0));
+    // Phase 1: Generate opponent moves to discover attacks and pins
+    Side opponentSide = (side == Side::w) ? Side::b : Side::w;
+    Color opponentColor = (opponentSide == Side::w) ? Color::w : Color::b;
+
+    for(int i = 0; i < 64; i++){
+        if(board.at(i).color == opponentColor){
+            generateValidMoves(i, result);
+        }
+    }
+
+    // Clear move data but keep attack/pin info
+    result.moves.clear();
+    result.startIndices.fill(-1);
+    result.counts.fill(0);
+
+    // Phase 2: Generate current side's legal moves
+    Color color = (side == Side::w) ? Color::w : Color::b;
+    bool inCheck = (color == Color::w && !result.attacksOnWhiteKing.empty())
+                || (color == Color::b && !result.attacksOnBlackKing.empty());
 
     for(int i = 0; i < 64; i++){
         if(board.at(i).color == color){
-            if(thisSideInCheck){
-                generateCheckResolutions(i, color);
+            if(inCheck){
+                generateCheckResolutions(i, color, result);
             }
             else{
-                generateValidMoves(i);
+                generateValidMoves(i, result);
             }
         }
     }
+
+    // Determine position status
+    if(result.moves.empty()){
+        result.status = inCheck ? PositionStatus::CheckMate : PositionStatus::Stalemate;
+    }
+
+    return result;
 }
 
 
-void Position::generateValidMoves(int square){
+void Position::generateValidMoves(int square, MoveGenResult& result){
     if(square < 0 || square > 63){
         throw std::out_of_range("Position::generateValidMoves: provided square is out of range");
     }
@@ -471,38 +489,32 @@ void Position::generateValidMoves(int square){
     if(p.type == PieceType::None) return;
     Color pColor = p.color;
 
-    int moveIndex = possibleMoves.size();
+    int moveIndex = result.moves.size();
     int count = 0;
 
-    std::string piece = "";
-    if(p.type == PieceType::R){
-        piece = "Rook";
-    }
-
-    bool canCastle = true;
-    auto castleLambda = [this, &pColor, &canCastle, &square, &count](int sq){
-        std::cout << "called castle lambda checking square: " << std::to_string(sq) << std::endl;
+    //bool canCastle = true;
+    auto castleLambda = [this, &pColor, &square, &count, &result](int sq){
         if((sq % 8) == 0){
-            std::cout << "found we can castle long at square: " << std::to_string(sq) << std::endl;
-            possibleMoves.push_back(Move(square, sq + 2, MoveType::CastleLong));
-            count++;
+            Piece rook = board.at(sq);
+            if(rook.type == PieceType::R && rook.color == (pColor == Color::w ? Color::w : Color::b)){
+                result.moves.push_back(Move(square, sq + 2, MoveType::CastleLong));
+                count++;
+            }
             return true;
         }
         if((sq % 8) == 7){
-            std::cout << "found we can castle short at square: " << std::to_string(sq) << std::endl;
-            possibleMoves.push_back(Move(square, sq - 1, MoveType::CastleShort));
-            count++;
+            Piece rook = board.at(sq);
+            if(rook.type == PieceType::R && rook.color == (pColor == Color::w ? Color::w : Color::b)){
+                result.moves.push_back(Move(square, sq - 1, MoveType::CastleShort));
+                count++;
+            }
             return true;
         }
 
         if(board.at(sq).type != PieceType::None){
-            std::cout << "found a piece at square: " << std::to_string(sq) << std::endl;
-            canCastle = false;
             return true;
         }
         if((std::abs(sq - square) <= 2) && isSquareAttacked(sq, pColor)){
-            std::cout << "square: " << std::to_string(sq) << "is attacked" << std::endl;
-            canCastle = false;
             return true;
         }
         return false;
@@ -510,7 +522,7 @@ void Position::generateValidMoves(int square){
 
 
     if(pColor == Color::w && p.type == PieceType::K){
-        if(!kingHasMovedWhite && squaresAttackingWhiteKing.size() == 0){
+        if(!kingHasMovedWhite && result.attacksOnWhiteKing.size() == 0){
             if(!rookLeftHasMovedWhite){
                  walkDirectionsAndDo(square, {-1}, false, castleLambda);
             }
@@ -520,7 +532,7 @@ void Position::generateValidMoves(int square){
         }
     }
     else if (pColor == Color::b && p.type == PieceType::K){
-        if(!kingHasMovedBlack && squaresAttackingBlackKing.size() == 0){
+        if(!kingHasMovedBlack && result.attacksOnBlackKing.size() == 0){
             if(!rookLeftHasMovedBlack){
                  walkDirectionsAndDo(square, {-1}, false, castleLambda);
             }
@@ -530,74 +542,66 @@ void Position::generateValidMoves(int square){
         }
     }
 
-    std::vector<Pin*> pins = p.pins;
+    const PinInfo& pin = result.pins[square];
     switch(p.type){
         case PieceType::P:
-            getValidMovesPawn(count, square, p.pinDirections);
+            getValidMovesPawn(count, square, result);
             break;
         case PieceType::B:
-            if(!p.pinnedO){
-                generateDiagonalMoves(count, square, false, pColor, p.pinDirections);
+            if(!pin.pinnedO){
+                generateDiagonalMoves(count, square, false, pColor, result);
             }
             break;
         case PieceType::N:
-            if(!p.pinnedO && !p.pinnedD){
-                getValidMovesKnight(count, square);
+            if(!pin.pinnedO && !pin.pinnedD){
+                getValidMovesKnight(count, square, result);
             }
             break;
         case PieceType::R:
-            if(!p.pinnedD){
-                generateOrthoganalMoves(count, square, false, pColor, p.pinDirections);
+            if(!pin.pinnedD){
+                generateOrthoganalMoves(count, square, false, pColor, result);
             }
             break;
         case PieceType::Q:
-            if(!p.pinnedD){
-                generateOrthoganalMoves(count, square, false, pColor, p.pinDirections);
+            if(!pin.pinnedD){
+                generateOrthoganalMoves(count, square, false, pColor, result);
             }
-            if(!p.pinnedO){
-                generateDiagonalMoves(count, square, false, pColor, p.pinDirections);
+            if(!pin.pinnedO){
+                generateDiagonalMoves(count, square, false, pColor, result);
             }
             break;
         case PieceType::K:
-            generateDiagonalMoves(count, square, true, pColor, p.pinDirections);
-            generateOrthoganalMoves(count, square, true, pColor, p.pinDirections);
+            generateDiagonalMoves(count, square, true, pColor, result);
+            generateOrthoganalMoves(count, square, true, pColor, result);
             break;
         default:
             break;
     }
 
     if(count > 0){
-        moveStartIndices[square] = moveIndex;
-        moveCounts[square] = count;
+        result.startIndices[square] = moveIndex;
+        result.counts[square] = count;
     }
-}
-
-std::vector<Move> Position::getValidMovesForPieceAt(int square) const {
-    std::vector<Move> moves;
-    int startIndex = moveStartIndices[square];
-    for(int i = 0; i < moveCounts[square]; i++){
-        moves.push_back(possibleMoves[startIndex + i]);
-    }
-    return moves;
 }
 
 //Possible performance issue in that we will call this multiple times for a position with a check, causing multiple redeclarations of the lambda
-void Position::generateCheckResolutions(int square, Color color){
+void Position::generateCheckResolutions(int square, Color color, MoveGenResult& result){
     Piece p = board.at(square);
     std::vector<int>* attackers;
     int kingSquare = -1;
-    color == Color::w ? attackers = &squaresAttackingWhiteKing : attackers = &squaresAttackingBlackKing;
+    color == Color::w ? attackers = &result.attacksOnWhiteKing : attackers = &result.attacksOnBlackKing;
     color == Color::w ? kingSquare = board.whiteKingSquare : kingSquare = board.blackKingSquare;
 
     int generatedMoveCount = 0;
-    int moveIndex = possibleMoves.size();
+    int moveIndex = result.moves.size();
 
     // Pinned pieces can never resolve a check
-    if(p.type != PieceType::K && (p.pinnedD || p.pinnedO)){
+    const PinInfo& pin = result.pins[square];
+    if(p.type != PieceType::K && (pin.pinnedD || pin.pinnedO)){
         return;
     }
 
-    auto pawnMoveLambda = [&color, this, &attackers, &kingSquare, &square, &generatedMoveCount](int sq){
+    auto pawnMoveLambda = [&color, this, &attackers, &kingSquare, &square, &generatedMoveCount, &result](int sq){
         bool checkResolved = false;
         for(const auto& attackerSquare : *attackers){
             if(board.at(sq).color == Color::None){
@@ -610,12 +614,12 @@ void Position::generateCheckResolutions(int square, Color color){
             }
             checkResolved = false;
         }
-        possibleMoves.push_back(Move(square, sq));
+        result.moves.push_back(Move(square, sq));
         generatedMoveCount++;
         return true;
     };
 
-    auto pawnCaptureLambda = [&color, this, &attackers, &kingSquare, &generatedMoveCount, &square](int sq){
+    auto pawnCaptureLambda = [&color, this, &attackers, &kingSquare, &generatedMoveCount, &square, &result](int sq){
         bool checkResolved = false;
         for(const auto& attackerSquare : *attackers){
             if(board.at(sq).color != color && board.at(sq).color != Color::None){
@@ -632,41 +636,47 @@ void Position::generateCheckResolutions(int square, Color color){
             }
             checkResolved = false;
         }
-        possibleMoves.push_back(Move(square, sq));
+        result.moves.push_back(Move(square, sq));
         generatedMoveCount++;
         return true;
     };
 
-    auto checkLambda = [&color, this, &attackers, &kingSquare, &generatedMoveCount, &square](int sq){
+    auto checkLambda = [&color, this, &attackers, &kingSquare, &generatedMoveCount, &square, &result](int sq){
         bool checkResolved = false;
         for(const auto& attackerSquare : *attackers){
 
             if(board.at(sq).color != color){
                 if(squareIntersectsDiagonal(attackerSquare, sq, kingSquare) || squareIntersectsOrthoganal(attackerSquare, sq, kingSquare)){
                     checkResolved = true;
-
-                        //TODO: mark self as pinned WHEN THE MOVE IS ACTUALLY MADE
                 }
-                if(sq == attackerSquare){
-                    checkResolved = true;
+                if(board.at(sq).type != PieceType::None){
+                    if(sq == attackerSquare){
+                        checkResolved = true;
+                    }
+                    else{
+                        checkResolved = false;
+                        return true;
+                    }
                 }
             }
-
+            else{
+                return true;
+            }
             if(checkResolved == false){
                 return false;
             }
 
             checkResolved = false;
         }
-        possibleMoves.push_back(Move(square, sq));
+        result.moves.push_back(Move(square, sq));
         generatedMoveCount++;
         return true;
     };
 
-    auto kingEscapeLambda = [this, &color, &generatedMoveCount, &square](int sq){
+    auto kingEscapeLambda = [this, &color, &generatedMoveCount, &square, &result](int sq){
         if(board.at(sq).color != color){
             if(!isSquareAttacked(sq, color)){
-                possibleMoves.push_back(Move(square, sq));
+                result.moves.push_back(Move(square, sq));
                 generatedMoveCount++;
             }
         }
@@ -712,15 +722,15 @@ void Position::generateCheckResolutions(int square, Color color){
             walkDirectionsAndDo(square, DiagonalDirections, true, kingEscapeLambda);
             walkDirectionsAndDo(square, OrthoganalDirections, true, kingEscapeLambda);
             break;
-        default: 
+        default:
             break;
         }
 
         if(generatedMoveCount > 0){
-            moveStartIndices[square] = moveIndex;
-            moveCounts[square] = generatedMoveCount;
+            result.startIndices[square] = moveIndex;
+            result.counts[square] = generatedMoveCount;
         }
-        return;      
+        return;
     }
 
 template<size_t N, typename Func>
@@ -730,7 +740,7 @@ void Position::walkDirectionsAndDo(int startSquare, const int (&directions)[N], 
         while(true){
             if(curr % 8 == 0 && (directions[i] == -1 || directions[i] == 7 || directions[i] == -9)) break;
             if((curr + 1) % 8 == 0 && (directions[i] == 1 || directions[i] == -7 || directions[i] == 9)) break;
-    
+
             curr += directions[i];
             if(curr < 0 || curr >= 64) break;
 
@@ -747,7 +757,7 @@ bool Position::isSquareAttacked(int square, Color color){
     walkDirectionsAndDo(square, DiagonalDirections, false, [&attacked, this, color](int sq){
         if(board.at(sq).type != PieceType::None){
             if((board.at(sq).type == PieceType::B || board.at(sq).type == PieceType::Q) && board.at(sq).color != color){
-                    attacked = true; 
+                    attacked = true;
             }
 
             //to handle squares attacked by x-ray: if we see our own king, keep looking
@@ -778,7 +788,7 @@ bool Position::isSquareAttacked(int square, Color color){
     walkDirectionsAndDo(square, KnightMoves, true, [&attacked, this, color](int sq){
         if(board.at(sq).type != PieceType::None){
             if((board.at(sq).type == PieceType::N) && board.at(sq).color != color){
-                    attacked = true; 
+                    attacked = true;
             }
             return true;
         }
@@ -788,7 +798,7 @@ bool Position::isSquareAttacked(int square, Color color){
     walkDirectionsAndDo(square, color == Color::w ? pawnAttackerDirectionsWhite : pawnAttackerDirectionsBlack, true, [&attacked, this, color](int sq){
         if(board.at(sq).type != PieceType::None){
             if((board.at(sq).type == PieceType::P) && board.at(sq).color != color){
-                    attacked = true;; 
+                    attacked = true;;
             }
             return true;
         }
@@ -798,21 +808,15 @@ bool Position::isSquareAttacked(int square, Color color){
     return attacked;
 }
 
-bool Position::makeMove(const Move& move){
-    Side opponentSide = (sideToMove == Side::w) ? Side::b : Side::w;
-    //generateAllValidMovesForSide(opponentSide);
-    //possibleMoves.clear();
-    //moveStartIndices.fill(-1);
-    //moveCounts.fill(-1);
+bool Position::makeMove(const Move& move, const MoveGenResult& currentMoves){
+    int start = currentMoves.startIndices[move.from];
+    int count = currentMoves.counts[move.from];
+    if(start < 0 || count <= 0) return false;
 
-   //generateAllValidMovesForSide(sideToMove);
-
-    int start = moveStartIndices[move.from];
-    int end = start + moveCounts[move.from];
-    Move*  matchedMove = nullptr;
-    for(int i = start; i < end; i++){
-        if(possibleMoves[i] == move){
-            matchedMove = &possibleMoves[i];
+    const Move* matchedMove = nullptr;
+    for(int i = start; i < start + count; i++){
+        if(currentMoves.moves[i] == move){
+            matchedMove = &currentMoves.moves[i];
         }
     }
 
@@ -820,83 +824,8 @@ bool Position::makeMove(const Move& move){
         return false;
     }
 
-    board.movePiece(*matchedMove);
-
-    if(sideToMove == Side::w){
-        if(board.at(move.from).type == PieceType::K){
-            kingHasMovedWhite = true;
-        }
-        if(board.at(move.from).type == PieceType::R){
-            if((move.from % 8) == 0){
-                rookLeftHasMovedWhite = true;
-            }
-            if((move.from % 8) == 7){
-                rookRightHasMovedWhite = true;
-            }
-        }
-    }
-    else{
-        if(board.at(move.from).type == PieceType::K){
-            kingHasMovedBlack = true;
-        }
-        if(board.at(move.from).type == PieceType::R){
-            if((move.from % 8) == 0){
-                rookLeftHasMovedBlack = true;
-            }
-            if((move.from % 8) == 7){
-                rookRightHasMovedBlack = true;
-            }
-        }
-    }
-
-    possibleMoves.clear();
-    moveStartIndices.fill(-1);
-    moveCounts.fill(0);
-    pins.clear();
-
-    for(auto& piece : board.getSquares()){
-        piece.pins.clear();
-        piece.pinDirections.clear();
-        piece.pinnedD = false;
-        piece.pinnedO = false;
-    }
-
-    sideToMove = (sideToMove == Side::w) ? Side::b : Side::w;
-
+    applyMove(*matchedMove);
     generatePieceLists();
-
-    possibleMoves.clear();
-    moveStartIndices.fill(-1);
-    moveCounts.fill(-1);
-
-    squaresAttackingBlackKing.clear();
-    squaresAttackingWhiteKing.clear();
-
-    // Generate opponent moves for attack/pin data
-    opponentSide = (sideToMove == Side::w) ? Side::b : Side::w;
-    generateAllValidMovesForSide(opponentSide);
-
-    // Clear move data but keep attack/pin info
-    possibleMoves.clear();
-    moveStartIndices.fill(-1);
-    moveCounts.fill(-1);
-
-    // Generate current side's legal moves
-    generateAllValidMovesForSide(sideToMove);
-
-    if(possibleMoves.size() == 0){
-        bool inCheck;
-        sideToMove == Side::w? 
-            inCheck = squaresAttackingWhiteKing.size() != 0 :
-            inCheck = squaresAttackingBlackKing.size() != 0;
-        
-        if(inCheck){
-            status = PositionStatus::CheckMate;
-        }
-        else{
-            status = PositionStatus::Stalemate;
-        }
-    }
 
     return true;
 }
@@ -908,22 +837,66 @@ std::string Position::toFEN() const {
     return fen;
 }
 
-void Position::undoMove(const Move& move){
-    
+UndoInfo Position::applyMove(const Move& move){
+    UndoInfo undo;
+    undo.capturedPiece = board.at(move.to);
+    undo.whiteKingSquare = board.whiteKingSquare;
+    undo.blackKingSquare = board.blackKingSquare;
+    undo.sideToMove = sideToMove;
+    undo.kingHasMovedWhite = kingHasMovedWhite;
+    undo.kingHasMovedBlack = kingHasMovedBlack;
+    undo.rookLeftHasMovedWhite = rookLeftHasMovedWhite;
+    undo.rookRightHasMovedWhite = rookRightHasMovedWhite;
+    undo.rookLeftHasMovedBlack = rookLeftHasMovedBlack;
+    undo.rookRightHasMovedBlack = rookRightHasMovedBlack;
+
+    PieceType movedType = board.at(move.from).type;
+    board.movePiece(move);
+
+    if(sideToMove == Side::w){
+        if(movedType == PieceType::K) kingHasMovedWhite = true;
+        if(movedType == PieceType::R){
+            if((move.from % 8) == 0) rookLeftHasMovedWhite = true;
+            if((move.from % 8) == 7) rookRightHasMovedWhite = true;
+        }
+    } else {
+        if(movedType == PieceType::K) kingHasMovedBlack = true;
+        if(movedType == PieceType::R){
+            if((move.from % 8) == 0) rookLeftHasMovedBlack = true;
+            if((move.from % 8) == 7) rookRightHasMovedBlack = true;
+        }
+    }
+
+    sideToMove = (sideToMove == Side::w) ? Side::b : Side::w;
+    return undo;
 }
 
-//determining checks
-//need to know:
-    //are we currently in check?
-        //if we are currently in check:
-            //can we move out of check?
-            //can we block the check?
-            //can we capture the attacker?
-    //will a move put us in check? (therefore illegal)
+void Position::undoMove(const Move& move, const UndoInfo& undo){
+    // Reverse castling rook movement first
+    if(move.type == MoveType::CastleLong){
+        auto& squares = board.getSquares();
+        squares[move.to + 1] = Piece(PieceType::None, Color::None);
+        squares[move.to - 2] = Piece(PieceType::R, board.at(move.to).color);
+    }
+    else if(move.type == MoveType::CastleShort){
+        auto& squares = board.getSquares();
+        squares[move.to - 1] = Piece(PieceType::None, Color::None);
+        squares[move.to + 1] = Piece(PieceType::R, board.at(move.to).color);
+    }
 
+    // Move piece back
+    auto& squares = board.getSquares();
+    squares[move.from] = squares[move.to];
+    squares[move.to] = undo.capturedPiece;
 
-    //start: generate all possible moves for white
-        //let white make a move
-        //black generates all of white's possible moves, and generates its own possible moves based on white's possible moves
-        //black makes a move
-        //white generates all of black's possible moves, and generates its own possible moves based on black's possible moves
+    // Restore all saved state
+    board.whiteKingSquare = undo.whiteKingSquare;
+    board.blackKingSquare = undo.blackKingSquare;
+    sideToMove = undo.sideToMove;
+    kingHasMovedWhite = undo.kingHasMovedWhite;
+    kingHasMovedBlack = undo.kingHasMovedBlack;
+    rookLeftHasMovedWhite = undo.rookLeftHasMovedWhite;
+    rookRightHasMovedWhite = undo.rookRightHasMovedWhite;
+    rookLeftHasMovedBlack = undo.rookLeftHasMovedBlack;
+    rookRightHasMovedBlack = undo.rookRightHasMovedBlack;
+}

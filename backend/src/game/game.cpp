@@ -7,15 +7,7 @@
 Game::Game(){
     res = GameResult::InProgress;
     p.setSideToMove(Side::w);
-    p.generateAllValidMovesForSide(Side::w);;
-}
-
-template<typename Func>
-void Game::testGameWithInput(std::vector<std::string> moves, Func testFunc){
-    for(const auto& move : moves){
-        p.makeMove(moveStringToMove(move));
-        testFunc();
-    }
+    currentMoves = p.generateAllValidMovesForSide(Side::w);
 }
 
 int stringToSquare(std::string_view squareString){
@@ -62,16 +54,18 @@ bool Game::makeMove(const std::string& from, const std::string& to) {
     int toSq = stringToSquare(to);
     if (fromSq < 0 || toSq < 0) return false;
     Move move(static_cast<uint8_t>(fromSq), static_cast<uint8_t>(toSq));
-    bool success = p.makeMove(move);
-    if (success) moveHistory.push_back(move);
-    PositionStatus status = p.getStatus();
-    if(status == PositionStatus::CheckMate){
-        p.getSideToMove() == Side::w?
-            res = GameResult::BlackWin :
-            res = GameResult::WhiteWin;
-    }
-    else if(status == PositionStatus::Stalemate || status == PositionStatus::MoveDraw){
-        res = GameResult::Draw;
+    bool success = p.makeMove(move, currentMoves);
+    if (success) {
+        moveHistory.push_back(move);
+        currentMoves = p.generateAllValidMovesForSide(p.getSideToMove());
+        if(currentMoves.status == PositionStatus::CheckMate){
+            p.getSideToMove() == Side::w?
+                res = GameResult::BlackWin :
+                res = GameResult::WhiteWin;
+        }
+        else if(currentMoves.status == PositionStatus::Stalemate || currentMoves.status == PositionStatus::MoveDraw){
+            res = GameResult::Draw;
+        }
     }
     return success;
 }
@@ -81,22 +75,6 @@ void Game::reset() {
     moveHistory.clear();
     res = GameResult::InProgress;
     p.setSideToMove(Side::w);
-    p.generateAllValidMovesForSide(Side::w);
+    currentMoves = p.generateAllValidMovesForSide(Side::w);
 }
 
-void Game::run(){
-    while(res == GameResult::InProgress){
-
-        p.getBoard().printBoard();
-        std::cout << '\n';
-
-        std::string input;
-
-        std::cout << "enter your move (c3 f3)" << '\n';
-        std::getline(std::cin, input);
-
-
-        p.makeMove(moveStringToMove(input));
-        
-    }
-}

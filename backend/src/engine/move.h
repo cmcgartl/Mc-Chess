@@ -19,12 +19,19 @@ struct Move {
     }
 };
 
+struct PinInfo {
+    bool pinnedD = false;
+    bool pinnedO = false;
+    int pinDirection = 0;
+};
+
 struct MoveGenResult {
     std::vector<Move> moves;
     std::array<int, 64> startIndices;
     std::array<int, 64> counts;
     std::vector<int> attacksOnWhiteKing;
     std::vector<int> attacksOnBlackKing;
+    std::array<PinInfo, 64> pins;
     PositionStatus status = PositionStatus::InProgress;
 
     MoveGenResult() {

@@ -1,4 +1,4 @@
-import {useState, useCallback, useEffect} from "react"
+import {useState, useCallback, useEffect, useRef} from "react"
 //import { Chess } from "chess.js"
 import { Chessboard } from "react-chessboard"
 import { type GameState } from "../services/api"
@@ -68,9 +68,51 @@ const moveItemStyle: React.CSSProperties = {
     fontSize: '14px',
 }
 
+function movePieceInFEN(fen: string, from: string, to: string): string { 
+    const ranks = fen.split(' ')[0].split('/') 
+    const grid: string[][] = ranks.map(rank => { 
+        const row: string[] = [] 
+        for (const ch of rank) { 
+            if (ch >= '1' && ch <= '8') { 
+                for (let i = 0; i < parseInt(ch); i++) row.push('') 
+            } 
+        else { 
+            row.push(ch) 
+        } 
+    } 
+    return row 
+    }) 
+    const fromFile = from.charCodeAt(0) - 97 
+    const fromRank = 8 - parseInt(from[1]) 
+    const toFile = to.charCodeAt(0) - 97 
+    const toRank = 8 - parseInt(to[1]) 
+    grid[toRank][toFile] = grid[fromRank][fromFile] 
+    grid[fromRank][fromFile] = '' 
+    const newPlacement = grid.map(row => { 
+        let s = '', empty = 0 
+        for (const cell of row) { 
+            if (cell === '') {
+                empty++ 
+            } 
+            else {
+                if (empty > 0) { 
+                    s += empty; 
+                    empty = 0 
+                } 
+                s += cell 
+            } 
+        } 
+        if (empty > 0) s += empty 
+        return s 
+    }).join('/') 
+    const rest = fen.split(' ').slice(1).join(' ') 
+    return newPlacement + (rest ? ' ' + rest : '') 
+}
+
 const ChessGame = () => {
     const [game, setGame] = useState<GameState>();
-    const [square, setSquare] = useState<number>();
+    const gameRef = useRef<GameState | undefined>(game);
+    gameRef.current = game;
     const [highlightStyles, setHighlightStyles] = useState<Record<string, React.CSSProperties>>({})
 
     useEffect(() => {
@@ -91,9 +133,10 @@ const ChessGame = () => {
             })
     }
 
-   const onDrag = useCallback(({ square }: { isSparePiece: boolean; piece: {pieceType: string}; square: string | null}) => {
-        if(square && game){
-            const moves = game.legalMoves[square]
+    const onDrag = useCallback(({square} : {isSparePiece: boolean; piece: {pieceType : string}; square: string | null }) => {
+        const current = gameRef.current
+        if(square && current){
+            const moves = current.legalMoves[square]
             if(moves){
                 const styles: Record<string, React.CSSProperties> = {}
                 moves.forEach(move => {
@@ -102,25 +145,31 @@ const ChessGame = () => {
                 setHighlightStyles(styles)
             }
         }
-}, [game])
+}, [])
 
     const onDrop = useCallback(({ sourceSquare, targetSquare }: { piece: unknown; sourceSquare: string; targetSquare: string | null }) => {
         setHighlightStyles({})
         if (!targetSquare) return false
+
+        const moves = game?.legalMoves[sourceSquare]
+        if(!moves || !moves.includes(targetSquare)) return false
+
+        const optimisticGame = {
+            ...game!,
+            FEN: movePieceInFEN(game!.FEN, sourceSquare, targetSquare)
+        };
+        setGame(optimisticGame);
         try{
-            const legalMoves = game?.legalMoves[sourceSquare]
-            if(!legalMoves || !legalMoves.includes(targetSquare)) return false
             makeMove(sourceSquare, targetSquare)
                 .then(state => {
                     setGame(state);
                     const moveNotation = `${game?.turn === 'w' ? 'White' : 'Black'}: ${sourceSquare}${targetSquare}`
                     setMoveLog(prev => [...prev, moveNotation])
-                }).catch(() => {})
+                }).catch((err) => console.error("makeMove failed:", err))
         } catch(error){
             return false
         }
-
-        return false
+        return true
     }, [game])
 
     return (
@@ -132,8 +181,8 @@ const ChessGame = () => {
                 <div style={{width: '500px'}}>
                 <Chessboard options={{
                     position: game?.FEN,
-                    onPieceDrag: onDrag,
                     onPieceDrop: onDrop,
+                    onPieceDrag: onDrag,
                     showAnimations: false,
                     squareStyles: highlightStyles,
                     boardStyle: {
