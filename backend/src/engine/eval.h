@@ -105,13 +105,20 @@ struct TTEntry {
 
 class Eval {
     public:
-        int EvaluatePosition(const std::array<Piece, 64>& squares, Color color);
+        int EvaluatePosition(const std::array<Piece, 64>& squares, Color color, PositionStatus status);
         int getValueForPiece(const Piece& piece, int square);
-        MiniMaxResult MiniMax(Position& p, int depth, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta);
+        int getMVVLVAScore(const Piece& victim, int toSq, const Piece& attacker, int fromSq);
+        MiniMaxResult MiniMax(Position& p, int depth, int ply, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta);
+        MiniMaxResult quiescence(Position& p, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta);
+        void clearKillers();
+        void clearHistory();
         uint64_t nodes = 0;
     private:
         static constexpr size_t TT_SIZE = 1 << 20;
+        static constexpr int MAX_DEPTH = 64;
         std::vector<TTEntry> tt{TT_SIZE};
+        Move killers[MAX_DEPTH][2];
+        int historyTable[2][64][64];
 };
 
 

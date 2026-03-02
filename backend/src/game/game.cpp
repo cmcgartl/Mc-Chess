@@ -59,10 +59,11 @@ bool Game::makeMove(const std::string& from, const std::string& to) {
     if (success) {
         moveHistory.push_back(move);
         currentMoves = p.generateAllValidMovesForSide(p.getSideToMove());
-        if(currentMoves.status == PositionStatus::CheckMate){
-            p.getSideToMove() == Side::w?
-                res = GameResult::BlackWin :
+        if(currentMoves.status == PositionStatus::CheckMateWhite){
                 res = GameResult::WhiteWin;
+        }
+        else if(currentMoves.status == PositionStatus::CheckMateBlack){
+                res = GameResult::BlackWin;
         }
         else if(currentMoves.status == PositionStatus::Stalemate || currentMoves.status == PositionStatus::MoveDraw){
             res = GameResult::Draw;
@@ -92,10 +93,13 @@ std::optional<Move> Game::getEngineBestMove() {
     Color engineColor = (engineMode == EngineMode::White) ? Color::w : Color::b;
     MiniMaxResult result{{0,0}, negInf};
     eval.nodes = 0;
+    eval.clearKillers();
+    eval.clearHistory();
     auto start = std::chrono::steady_clock::now();
     for(int d = 1; d <= searchDepth; d++){
         MoveGenResult movesCopy = currentMoves;
-        result = eval.MiniMax(p, d, true, movesCopy, engineColor, negInf, posInf);
+        result = eval.MiniMax(p, d, 0, true, movesCopy, engineColor, negInf, posInf);
+
     }
     auto end = std::chrono::steady_clock::now();
     double ms = std::chrono::duration<double, std::milli>(end - start).count();

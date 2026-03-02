@@ -473,7 +473,8 @@ MoveGenResult Position::generateAllValidMovesForSide(Side side){
 
     // Determine position status
     if(result.moves.empty()){
-        result.status = inCheck ? PositionStatus::CheckMate : PositionStatus::Stalemate;
+        if(inCheck) result.status = side == Side::w ? PositionStatus::CheckMateBlack : PositionStatus::CheckMateWhite;
+        else result.status = PositionStatus::Stalemate;
     }
 
     return result;
@@ -811,7 +812,7 @@ bool Position::isSquareAttacked(int square, Color color){
 bool Position::makeMove(const Move& move, const MoveGenResult& currentMoves){
     int start = currentMoves.startIndices[move.from];
     int count = currentMoves.counts[move.from];
-    if(start < 0 || count <= 0) return false;
+    if(start < 0 || count <= 0 || move.to == move.from) return false;
 
     const Move* matchedMove = nullptr;
     for(int i = start; i < start + count; i++){

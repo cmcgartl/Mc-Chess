@@ -4,12 +4,17 @@
 #include <array>
 
 enum class MoveType{Normal, CastleLong, CastleShort, EP, P};
-enum class PositionStatus{InProgress, CheckMate, Stalemate, MoveDraw};
+enum class PositionStatus{InProgress, CheckMateWhite, CheckMateBlack, Stalemate, MoveDraw};
 
 struct Move {
     uint8_t from;
     uint8_t to;
     MoveType type;
+    Move(){
+        from = 0;
+        to = 0;
+        type = MoveType::Normal;
+    }
     Move(uint8_t from, uint8_t to):from(from), to(to), type(MoveType::Normal){};
     Move(uint8_t from, uint8_t to, MoveType type): from(from), to(to), type(type){};
 
