@@ -2,6 +2,7 @@
 #include "game.h"
 #include <iostream>
 #include <string>
+#include <chrono>
 
 
 Game::Game(){
@@ -76,5 +77,34 @@ void Game::reset() {
     res = GameResult::InProgress;
     p.setSideToMove(Side::w);
     currentMoves = p.generateAllValidMovesForSide(Side::w);
+}
+
+bool Game::isEngineTurn() const {
+    if (res != GameResult::InProgress) return false;
+    if (engineMode == EngineMode::Off) return false;
+    if (engineMode == EngineMode::White && p.getSideToMove() == Side::w) return true;
+    if (engineMode == EngineMode::Black && p.getSideToMove() == Side::b) return true;
+    return false;
+}
+
+std::optional<Move> Game::getEngineBestMove() {
+    if (!isEngineTurn() || currentMoves.moves.empty()) return std::nullopt;
+    Color engineColor = (engineMode == EngineMode::White) ? Color::w : Color::b;
+    MiniMaxResult result{{0,0}, negInf};
+    eval.nodes = 0;
+    auto start = std::chrono::steady_clock::now();
+    for(int d = 1; d <= searchDepth; d++){
+        MoveGenResult movesCopy = currentMoves;
+        result = eval.MiniMax(p, d, true, movesCopy, engineColor, negInf, posInf);
+    }
+    auto end = std::chrono::steady_clock::now();
+    double ms = std::chrono::duration<double, std::milli>(end - start).count();
+    double nps = (ms > 0) ? (eval.nodes / (ms / 1000.0)) : 0;
+    std::cout << "Depth " << searchDepth
+              << " | Nodes: " << eval.nodes
+              << " | Time: " << static_cast<int>(ms) << "ms"
+              << " | NPS: " << static_cast<int>(nps)
+              << " | Eval: " << result.score << std::endl;
+    return result.bestMove;
 }
 

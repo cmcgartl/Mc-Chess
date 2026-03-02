@@ -26,6 +26,8 @@ FetchContent_MakeAvailable(json)
 add_library(chess_engine
     backend/src/engine/board.cpp
     backend/src/engine/position.cpp
+    backend/src/engine/eval.cpp
+    backend/src/engine/zobrist.cpp
     backend/src/game/game.cpp
 )
 target_include_directories(chess_engine PUBLIC

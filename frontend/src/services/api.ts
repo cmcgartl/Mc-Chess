@@ -4,7 +4,8 @@ export interface GameState {
   FEN: string;
   turn: "w" | "b";
   legalMoves: Record<string, string[]>;
-  status: any;
+  status: string;
+  engineTurn: boolean;
 }
 
 export async function startGame(): Promise<GameState> {
@@ -30,6 +31,21 @@ export async function resetGame(): Promise<GameState> {
   const res = await fetch(`${BASE_URL}/reset`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Invalid move");
+  if (!res.ok) throw new Error("Reset failed");
+  return res.json();
+}
+
+export async function setEngine(
+  side: "white" | "black" | "off",
+  depth?: number
+): Promise<GameState> {
+  const body: Record<string, unknown> = { side };
+  if (depth !== undefined) body.depth = depth;
+  const res = await fetch(`${BASE_URL}/setEngine`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Failed to set engine");
   return res.json();
 }

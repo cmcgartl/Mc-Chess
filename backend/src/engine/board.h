@@ -17,7 +17,8 @@ public:
     void printSquareValues() const;
     int whiteKingSquare;
     int blackKingSquare;
-    std::array<Piece, 64>& getSquares() {return squares;}
+    std::array<Piece, 64>& getSquares(){return squares;}
+    const std::array<Piece, 64>& getSquares() const { return squares; }
     std::string toFEN() const;
 
 private:

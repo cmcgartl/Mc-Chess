@@ -2,6 +2,7 @@
 #include "board.h"
 #include "vector"
 #include "move.h"
+#include "zobrist.h"
 
 
 enum class Side {w, b};
@@ -14,15 +15,21 @@ struct UndoInfo {
     bool kingHasMovedWhite, kingHasMovedBlack;
     bool rookLeftHasMovedWhite, rookRightHasMovedWhite;
     bool rookLeftHasMovedBlack, rookRightHasMovedBlack;
+    uint64_t hash;
 };
 
 class Position{
     public:
+        uint64_t computeHash() const;
+        uint64_t getHash() const { return hash; }
+
         Position():board(START_FEN) , sideToMove(Side::w){
             generatePieceLists();
+            hash = computeHash();
         };
         Position(const std::string& FEN): board(FEN){
             generatePieceLists();
+            hash = computeHash();
         }
 
         bool tryMove(int src, int dest);
@@ -51,6 +58,7 @@ class Position{
         std::vector<Piece> whitePieces;
         std::vector<Piece> blackPieces;
         static constexpr const char* START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
+        uint64_t hash;
 
         void generateValidMoves(int square, MoveGenResult& result);
         void getValidMovesPawn(int& count, int square, MoveGenResult& result);

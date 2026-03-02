@@ -2,7 +2,7 @@ import {useState, useCallback, useEffect, useRef} from "react"
 //import { Chess } from "chess.js"
 import { Chessboard } from "react-chessboard"
 import { type GameState } from "../services/api"
-import {startGame, makeMove, resetGame} from "../services/api"
+import {startGame, makeMove, resetGame, setEngine} from "../services/api"
 
 const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -120,6 +120,9 @@ const ChessGame = () => {
     }, [])
 
     const [moveLog, setMoveLog] = useState<string[]>([])
+    const [engineSide, setEngineSide] = useState<"off" | "white" | "black">("off")
+    const [engineDepth, setEngineDepth] = useState(4)
+    const [gameStarted, setGameStarted] = useState(false)
 
     const getGameStatus = () => {
         return game?.status
@@ -130,7 +133,10 @@ const ChessGame = () => {
             .then(state => {
                 setGame(state)
                 setMoveLog([])
+                setGameStarted(false)
+                return setEngine(engineSide, engineDepth)
             })
+            .then(state => setGame(state))
     }
 
     const onDrag = useCallback(({square} : {isSparePiece: boolean; piece: {pieceType : string}; square: string | null }) => {
@@ -152,7 +158,7 @@ const ChessGame = () => {
         if (!targetSquare) return false
 
         const moves = game?.legalMoves[sourceSquare]
-        if(!moves || !moves.includes(targetSquare)) return false
+        if(!moves || !moves.includes(targetSquare) || game.engineTurn) return false
 
         const optimisticGame = {
             ...game!,
@@ -165,6 +171,7 @@ const ChessGame = () => {
                     setGame(state);
                     const moveNotation = `${game?.turn === 'w' ? 'White' : 'Black'}: ${sourceSquare}${targetSquare}`
                     setMoveLog(prev => [...prev, moveNotation])
+                    setGameStarted(true)
                 }).catch((err) => console.error("makeMove failed:", err))
         } catch(error){
             return false
@@ -206,6 +213,41 @@ const ChessGame = () => {
                         >
                             New Game
                         </button>
+
+                    <div style={{display: 'flex', gap: '15px', alignItems: 'center', backgroundColor: '#16213e', padding: '10px 20px', borderRadius: '8px'}}>
+                        <label>Engine:</label>
+                        <select
+                            value={engineSide}
+                            disabled={gameStarted}
+                            onChange={async (e) => {
+                                const side = e.target.value as "off" | "white" | "black"
+                                setEngineSide(side)
+                                const state = await setEngine(side, engineDepth)
+                                setGame(state)
+                            }}
+                            style={{padding: '6px 10px', borderRadius: '4px', backgroundColor: '#0f3460', color: '#eee', border: '1px solid #333', cursor: gameStarted ? 'not-allowed' : 'pointer', opacity: gameStarted ? 0.5 : 1}}
+                        >
+                            <option value="off">Off</option>
+                            <option value="black">Black</option>
+                            <option value="white">White</option>
+                        </select>
+                        <label>Depth:</label>
+                        <select
+                            value={engineDepth}
+                            disabled={gameStarted}
+                            onChange={async (e) => {
+                                const depth = parseInt(e.target.value)
+                                setEngineDepth(depth)
+                                const state = await setEngine(engineSide, depth)
+                                setGame(state)
+                            }}
+                            style={{padding: '6px 10px', borderRadius: '4px', backgroundColor: '#0f3460', color: '#eee', border: '1px solid #333', cursor: gameStarted ? 'not-allowed' : 'pointer', opacity: gameStarted ? 0.5 : 1}}
+                        >
+                            {[1, 2, 3, 4, 5, 6].map(d => (
+                                <option key={d} value={d}>{d}</option>
+                            ))}
+                        </select>
+                    </div>
 
             </div>
             <div style={moveLogStyle}>

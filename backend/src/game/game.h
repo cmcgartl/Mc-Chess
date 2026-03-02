@@ -3,8 +3,11 @@
 #include "vector"
 #include "move.h"
 #include "position.h"
+#include "eval.h"
+#include <optional>
 
 enum class GameResult {InProgress, WhiteWin, BlackWin, Draw};
+enum class EngineMode {Off, White, Black};
 
 class Game {
     public:
@@ -27,9 +30,19 @@ class Game {
         const MoveGenResult& getCurrentMoves() const {return currentMoves;}
         std::string squareToAlgebraic(int square);
 
+        void setEngineMode(EngineMode mode) { engineMode = mode; }
+        EngineMode getEngineMode() const { return engineMode; }
+        void setSearchDepth(int depth) { searchDepth = depth; }
+        int getSearchDepth() const { return searchDepth; }
+        bool isEngineTurn() const;
+        std::optional<Move> getEngineBestMove();
+
     private:
         Position p;
         MoveGenResult currentMoves;
         std::vector<Move> moveHistory;
         GameResult res;
+        Eval eval;
+        EngineMode engineMode = EngineMode::Off;
+        int searchDepth = 4;
 };

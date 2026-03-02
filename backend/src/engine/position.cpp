@@ -22,7 +22,7 @@ DirectionSet getDirections(PieceType type, Color color) {
     switch(type) {
         case PieceType::B: return {DiagonalDirections, 4, false};
         case PieceType::R: return {OrthoganalDirections, 4, false};
-        case PieceType::Q: return {DiagonalDirections, 4, false}; // need both, see below
+        case PieceType::Q: return {DiagonalDirections, 4, false};
         case PieceType::N: return {KnightMoves, 8, true};
         case PieceType::P: return color == Color::w
             ? DirectionSet{pawnAttackerDirectionsWhite, 2, true}
@@ -830,6 +830,20 @@ bool Position::makeMove(const Move& move, const MoveGenResult& currentMoves){
     return true;
 }
 
+uint64_t Position::computeHash() const {
+    uint64_t h = 0;
+    const auto& squares = board.getSquares();
+    for(int i = 0; i < 64; i++){
+        if(squares[i].type != PieceType::None){
+            int pieceIdx = static_cast<int>(squares[i].type);
+            int colorIdx = static_cast<int>(squares[i].color);
+            h ^= Zobrist::pieceKeys[pieceIdx][colorIdx][i];
+        }
+    }
+    if(sideToMove == Side::b) h ^= Zobrist::sideToMoveKey;
+    return h;
+}
+
 std::string Position::toFEN() const {
     std::string fen = board.toFEN();
     fen += (sideToMove == Side::w) ? " w" : " b";
@@ -849,6 +863,26 @@ UndoInfo Position::applyMove(const Move& move){
     undo.rookRightHasMovedWhite = rookRightHasMovedWhite;
     undo.rookLeftHasMovedBlack = rookLeftHasMovedBlack;
     undo.rookRightHasMovedBlack = rookRightHasMovedBlack;
+    undo.hash = hash;
+
+    // Update hash: remove moving piece from source square
+    Piece movingPiece = board.at(move.from);
+    int pieceIdx = static_cast<int>(movingPiece.type);
+    int colorIdx = static_cast<int>(movingPiece.color);
+    hash ^= Zobrist::pieceKeys[pieceIdx][colorIdx][move.from];
+
+    // Update hash: remove captured piece if any
+    if(undo.capturedPiece.type != PieceType::None){
+        int capPieceIdx = static_cast<int>(undo.capturedPiece.type);
+        int capColorIdx = static_cast<int>(undo.capturedPiece.color);
+        hash ^= Zobrist::pieceKeys[capPieceIdx][capColorIdx][move.to];
+    }
+
+    // Update hash: place moving piece on destination square
+    hash ^= Zobrist::pieceKeys[pieceIdx][colorIdx][move.to];
+
+    // Update hash: flip side to move
+    hash ^= Zobrist::sideToMoveKey;
 
     PieceType movedType = board.at(move.from).type;
     board.movePiece(move);
@@ -899,4 +933,5 @@ void Position::undoMove(const Move& move, const UndoInfo& undo){
     rookRightHasMovedWhite = undo.rookRightHasMovedWhite;
     rookLeftHasMovedBlack = undo.rookLeftHasMovedBlack;
     rookRightHasMovedBlack = undo.rookRightHasMovedBlack;
+    hash = undo.hash;
 }
