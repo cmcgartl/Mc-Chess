@@ -6,6 +6,7 @@
 #include "crow.h"
 #include "crow/middlewares/cors.h"
 #include "nlohmann/json.hpp"
+#include <cstdlib>
 
 crow::response retrieveGameState(Game& game);
 
@@ -14,7 +15,7 @@ int main(){
     crow::App<crow::CORSHandler> app;
     auto& cors = app.get_middleware<crow::CORSHandler>();
     cors.global()
-        .origin("http://localhost:5173")
+        .origin("*")
         .methods("GET"_method, "POST"_method)
         .headers("Content-Type");
 
@@ -107,7 +108,9 @@ int main(){
     });
 
 
-    app.port(18080).run();
+    const char* portEnv = std::getenv("PORT");
+    int port = portEnv ? std::atoi(portEnv) : 18080;
+    app.port(port).run();
 }
 
 crow::response retrieveGameState(Game& game){

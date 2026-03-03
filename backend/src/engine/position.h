@@ -50,6 +50,7 @@ class Position{
         bool makeMove(const Move& move, const MoveGenResult& currentMoves);
         void undoMove(const Move& move, const UndoInfo& undo);
         int getEnPassantSquare() const {return enPassantSquare;}
+        bool getIsEndGame() const {return isEndGame;}
 
     private:
         Board board;
