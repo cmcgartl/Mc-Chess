@@ -1,4 +1,5 @@
 #include "eval.h"
+#include <algorithm>
 #include <limits>
 #include <cstring>
 #include <random>
