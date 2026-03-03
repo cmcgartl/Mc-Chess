@@ -6,11 +6,15 @@ export interface GameState {
   legalMoves: Record<string, string[]>;
   status: string;
   engineTurn: boolean;
+  engineMoveFrom?: string;
+  engineMoveTo?: string;
 }
 
 export async function startGame(): Promise<GameState> {
   const res = await fetch(`${BASE_URL}/startGame`);
-  if (!res.ok) throw new Error("Failed to start game");
+  if(!res.ok) {
+    throw new Error("Failed to start game");
+  }
   return res.json();
 }
 
@@ -21,7 +25,10 @@ export async function makeMove(from: string, to: string): Promise<GameState> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ from, to }),
   });
-  if (!res.ok) throw new Error("Invalid move");
+
+  if (!res.ok){
+    throw new Error("Invalid move");
+  }
   const data = await res.json();
   console.log(data);
   return data;
@@ -31,14 +38,13 @@ export async function resetGame(): Promise<GameState> {
   const res = await fetch(`${BASE_URL}/reset`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Reset failed");
+  if(!res.ok) {
+    throw new Error("Reset failed");
+  }
   return res.json();
 }
 
-export async function setEngine(
-  side: "white" | "black" | "off",
-  depth?: number
-): Promise<GameState> {
+export async function setEngine(side: "white" | "black" | "off", depth?: number): Promise<GameState> {
   const body: Record<string, unknown> = { side };
   if (depth !== undefined) body.depth = depth;
   const res = await fetch(`${BASE_URL}/setEngine`, {
@@ -46,6 +52,8 @@ export async function setEngine(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error("Failed to set engine");
+  if(!res.ok){
+    throw new Error("Failed to set engine");
+  }
   return res.json();
 }

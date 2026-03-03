@@ -1,4 +1,5 @@
 #include "board.h"
+#include "zobrist.h"
 #include <string>
 #include <cctype>
 
@@ -99,9 +100,44 @@ bool Board::isNum(char c){
     return c >= '0' && c <= '9';
 }
 
+void Board::updateHash(const Move& move, uint64_t& hash){
+
+    //xor the moving piece to remove from starting square
+    Piece p = squares[move.from];
+    int pieceIndex = static_cast<int>(p.type);
+    int colorIndex = static_cast<int>(p.color);
+    hash ^= Zobrist::pieceKeys[pieceIndex][colorIndex][move.from];
+    
+    //xor any captured piece's hash to remove it from the square
+    p = squares[move.to];
+    if(p.type != PieceType::None){
+        int capturePieceIndex = static_cast<int>(p.type);
+        int captureColorIndex = static_cast<int>(p.color);
+        hash ^= Zobrist::pieceKeys[capturePieceIndex][captureColorIndex][move.to];
+    }
+
+    //place our moving piece onto its destination square
+    if(move.type == MoveType::P){
+        pieceIndex = static_cast<int>(PieceType::Q);
+    }
+
+    //if the move was en passant, then capture square != move.to
+    //so we need to calculate it and xor it separately
+    if(move.type == MoveType::EP){
+        int capturedSquare = move.from > move.to ? move.to + 8 : move.to - 8;
+        p = squares[capturedSquare];
+        int capturePieceIndex = static_cast<int>(p.type);
+        int colorIndex = static_cast<int>(p.color);
+        hash ^= Zobrist::pieceKeys[capturePieceIndex][colorIndex][capturedSquare];
+
+    }
+    hash ^= Zobrist::pieceKeys[pieceIndex][colorIndex][move.to];
+
+}
+
 //naive move piece function: will move a piece from any valid starting location
 //to any valid destination location, whether or not that move is valid
-void Board::movePiece(const Move& move){
+void Board::movePiece(const Move& move, uint64_t& hash){
     if(move.from < 0 || move.from>= 64 || move.to < 0 ||  move.to >= 64){
         throw std::out_of_range("Board::movePiece: index out of range");
     }
@@ -113,22 +149,41 @@ void Board::movePiece(const Move& move){
         if(squares[move.from].color == Color::w) whiteKingSquare = move.to;
         else blackKingSquare = move.to;
     }
-
+    
+    updateHash(move, hash);
     squares[move.to] = squares[move.from];
     squares[move.from] = Piece{};
 
     if(move.type == MoveType::CastleLong){
         Move rookMove((move.to -2), (move.to + 1));
-        movePiece(rookMove);
+        movePiece(rookMove, hash);
     }
 
     if(move.type == MoveType::CastleShort){
         Move rookMove((move.to + 1), (move.to - 1));
-        movePiece(rookMove);
+        movePiece(rookMove, hash);
+    }
+
+    if(move.type == MoveType::P){
+        squares[move.to].type = PieceType::Q;
+    }
+
+    if(move.type == MoveType::EP){
+         int capturedSquare = move.from > move.to ? move.to + 8 : move.to - 8;
+         squares[capturedSquare] = Piece{};
     }
 }
 
 Piece& Board::at(int square){
+    if(square >= 0 && square <= 63){
+        return squares[square];
+    }
+    else{
+        throw std::out_of_range("Board::at: index out of range");
+    }
+}
+
+const Piece& Board::at(int square) const{
     if(square >= 0 && square <= 63){
         return squares[square];
     }

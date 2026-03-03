@@ -169,13 +169,18 @@ const ChessGame = () => {
             makeMove(sourceSquare, targetSquare)
                 .then(state => {
                     setGame(state);
-                    const moveNotation = `${game?.turn === 'w' ? 'White' : 'Black'}: ${sourceSquare}${targetSquare}`
-                    setMoveLog(prev => [...prev, moveNotation])
+                    const playerMove = `${game?.turn === 'w' ? 'White' : 'Black'}: ${sourceSquare}${targetSquare}`
+                    setMoveLog(prev => [...prev, playerMove])
                     setGameStarted(true)
+                    if(state.engineMoveFrom && state.engineMoveTo){
+                        const engineMove = `${game?.turn === 'w' ? 'Black' : 'White'}: ${state.engineMoveFrom}${state.engineMoveTo}`
+                        setMoveLog(prev => [...prev, engineMove])
+                    }
                 }).catch((err) => console.error("makeMove failed:", err))
         } catch(error){
             return false
         }
+
         return true
     }, [game])
 
@@ -224,6 +229,11 @@ const ChessGame = () => {
                                 setEngineSide(side)
                                 const state = await setEngine(side, engineDepth)
                                 setGame(state)
+                                if(state.engineMoveFrom && state.engineMoveTo){
+                                    const engineMove = `${side === 'white' ? 'White' : 'Black'}: ${state.engineMoveFrom}${state.engineMoveTo}`
+                                    setMoveLog(prev => [...prev, engineMove])
+                                    setGameStarted(true)
+                                }
                             }}
                             style={{padding: '6px 10px', borderRadius: '4px', backgroundColor: '#0f3460', color: '#eee', border: '1px solid #333', cursor: gameStarted ? 'not-allowed' : 'pointer', opacity: gameStarted ? 0.5 : 1}}
                         >

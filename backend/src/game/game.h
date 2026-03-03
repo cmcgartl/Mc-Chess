@@ -36,6 +36,8 @@ class Game {
         int getSearchDepth() const { return searchDepth; }
         bool isEngineTurn() const;
         std::optional<Move> getEngineBestMove();
+        void setSelectedMove(const Move& m);
+        const Move& getSelectedMove() const {return selectedMove;}
 
     private:
         Position p;
@@ -45,4 +47,5 @@ class Game {
         Eval eval;
         EngineMode engineMode = EngineMode::Off;
         int searchDepth = 4;
+        Move selectedMove;
 };

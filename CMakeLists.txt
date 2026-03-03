@@ -28,6 +28,9 @@ add_library(chess_engine
     backend/src/engine/position.cpp
     backend/src/engine/eval.cpp
     backend/src/engine/zobrist.cpp
+    backend/src/engine/move_gen_helpers.cpp
+    backend/src/engine/piece_movement.cpp
+    backend/src/engine/direction_constants.cpp
     backend/src/game/game.cpp
 )
 target_include_directories(chess_engine PUBLIC

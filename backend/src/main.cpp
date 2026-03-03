@@ -33,7 +33,7 @@ int main(){
     CROW_ROUTE(app, "/makeMove").methods(crow::HTTPMethod::POST)
     ([&game](const crow::request& req){
         auto body = crow::json::load(req.body);
-
+        bool engineMoved = false;
         std::string from = body["from"].s();
         std::string to = body["to"].s();
         if(game.makeMove(from, to)){
@@ -43,7 +43,17 @@ int main(){
                 if (bestMove.has_value()) {
                     std::string engineFrom = game.squareToAlgebraic(bestMove->from);
                     std::string engineTo = game.squareToAlgebraic(bestMove->to);
+                    game.setSelectedMove(*bestMove);
                     game.makeMove(engineFrom, engineTo);
+                    engineMoved = true;
+                    auto res = retrieveGameState(game);
+                    if(engineMoved){
+                        auto cat = nlohmann::json::parse(res.body);
+                        cat["engineMoveFrom"] = game.squareToAlgebraic(game.getSelectedMove().from);
+                        cat["engineMoveTo"] = game.squareToAlgebraic(game.getSelectedMove().to);
+                        res.body = cat.dump();
+                    }
+                    return res;
                 }
             }
             return retrieveGameState(game);
@@ -75,7 +85,14 @@ int main(){
             if (bestMove.has_value()) {
                 std::string engineFrom = game.squareToAlgebraic(bestMove->from);
                 std::string engineTo = game.squareToAlgebraic(bestMove->to);
+                game.setSelectedMove(*bestMove);
                 game.makeMove(engineFrom, engineTo);
+                auto res = retrieveGameState(game);
+                auto cat = nlohmann::json::parse(res.body);
+                cat["engineMoveFrom"] = game.squareToAlgebraic(game.getSelectedMove().from);
+                cat["engineMoveTo"] = game.squareToAlgebraic(game.getSelectedMove().to);
+                res.body = cat.dump();
+                return res;
             }
         }
 
@@ -104,7 +121,6 @@ crow::response retrieveGameState(Game& game){
         response["turn"] = (p.getSideToMove() == Side::w) ? "w" : "b";
         response["status"] = game.getResultString();
         response["engineTurn"] = game.isEngineTurn();
-
         //fill legal moves with string representations
         for(const auto& move : game.getCurrentMoves().moves){
             std::string from = game.squareToAlgebraic(move.from);

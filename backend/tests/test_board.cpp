@@ -1,6 +1,7 @@
 #include "catch.hpp"
 #include "position.h"
 #include "game.h"
+#include "move_gen_helpers.h"
 
 // Helper to extract moves for a specific square from a MoveGenResult
 static std::vector<Move> getMovesAt(const MoveGenResult& result, int square) {
@@ -276,72 +277,72 @@ TEST_CASE("Test Pinned piece movement generation"){
 
 TEST_CASE("isSquareAttacked - diagonal attack by bishop"){
     Position p("8/1b6/8/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - diagonal blocked by piece"){
     Position p("8/1b6/2P5/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == false);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == false);
 }
 
 TEST_CASE("isSquareAttacked - orthogonal attack by rook"){
     Position p("4r3/8/8/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - orthogonal blocked by piece"){
     Position p("4r3/8/8/4P3/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == false);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == false);
 }
 
 TEST_CASE("isSquareAttacked - knight attack"){
     Position p("8/8/5n2/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - knight not attacking"){
     Position p("n7/8/8/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == false);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == false);
 }
 
 TEST_CASE("isSquareAttacked - black pawn attacks white piece"){
     Position p("8/8/8/3p4/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - white pawn attacks black piece"){
     Position p("8/8/8/4k3/3P4/8/8/8");
-    REQUIRE(p.isSquareAttacked(28, Color::b) == true);
+    REQUIRE(isSquareAttacked(28, Color::b, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - pawn does not attack forward"){
     Position p("8/8/8/4p3/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == false);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == false);
 }
 
 TEST_CASE("isSquareAttacked - queen diagonal"){
     Position p("8/8/8/8/4K3/8/8/7q");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - queen orthogonal"){
     Position p("8/8/8/8/q3K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - not attacked empty board"){
     Position p("8/8/8/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == false);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == false);
 }
 
 TEST_CASE("isSquareAttacked - rook on a-file attacks corner"){
     Position p("K7/8/8/8/8/8/8/r7");
-    REQUIRE(p.isSquareAttacked(0, Color::w) == true);
+    REQUIRE(isSquareAttacked(0, Color::w, p) == true);
 }
 
 TEST_CASE("isSquareAttacked - multiple attackers"){
     Position p("4r3/1b6/8/8/4K3/8/8/8");
-    REQUIRE(p.isSquareAttacked(36, Color::w) == true);
+    REQUIRE(isSquareAttacked(36, Color::w, p) == true);
 }
 
 

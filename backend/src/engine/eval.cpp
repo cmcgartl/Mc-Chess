@@ -1,6 +1,7 @@
 #include "eval.h"
 #include <limits>
 #include <cstring>
+#include <random>
 
 void Eval::clearKillers(){
     std::memset(killers, 0, sizeof(killers));
@@ -10,8 +11,19 @@ void Eval::clearHistory(){
     std::memset(historyTable, 0, sizeof(historyTable));
 }
 
-int Eval::getMVVLVAScore(const Piece& victim, int toSq, const Piece& attacker, int fromSq){
-    return getValueForPiece(victim, toSq) * 10 - getValueForPiece(attacker, fromSq);
+void Eval::updateHistoryTable(const std::array<Piece, 64>& squares, const Move& move, int depth, int ply, int sideToMove){
+    int sideIdx = static_cast<int>(sideToMove);
+    if(squares[move.to].type == PieceType::None){
+        if(!(move == killers[ply][0]) && !(move == killers[ply][1])){
+            killers[ply][1] = killers[ply][0];
+            killers[ply][0] = move;
+        }
+        historyTable[sideIdx][move.from][move.to] += depth * depth;
+    }
+}
+
+int Eval::getMVVLVAScore(int from, int to, const std::array<Piece, 64>& squares){
+    return getValueForPiece(squares[to], to) * 10 - getValueForPiece(squares[from], from);
 }
 
 int Eval::EvaluatePosition(const std::array<Piece, 64>& squares, Color c, PositionStatus status){
@@ -71,12 +83,22 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
     TTEntry& ttEntry = tt[posHash % TT_SIZE];
     Move ttMove(0, 0);
     bool hasTTMove = false;
+    //if we find a match in the transposition table
     if(ttEntry.hash == posHash){
+        //if that has is AT LEAST as good of info as we are about to search for
         if(ttEntry.depth >= depth){
-            if(ttEntry.flag == TTFlag::EXACT) return {ttEntry.bestMove, ttEntry.score};
-            if(ttEntry.flag == TTFlag::LOWER_BOUND) alpha = std::max(alpha, ttEntry.score);
-            if(ttEntry.flag == TTFlag::UPPER_BOUND) beta = std::min(beta, ttEntry.score);
-            if(alpha >= beta) return {ttEntry.bestMove, ttEntry.score};
+            if(ttEntry.flag == TTFlag::EXACT){
+                return {ttEntry.bestMove, ttEntry.score};
+            }
+            if(ttEntry.flag == TTFlag::LOWER){
+                alpha = std::max(alpha, ttEntry.score);
+            }
+            if(ttEntry.flag == TTFlag::UPPER) {
+                beta = std::min(beta, ttEntry.score);
+            }
+            if(alpha >= beta) {
+                return {ttEntry.bestMove, ttEntry.score};
+            }
         }
         auto it = std::find(moveState.moves.begin(), moveState.moves.end(), ttEntry.bestMove);
         if(it != moveState.moves.end()){
@@ -87,22 +109,31 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
     int originalAlpha = alpha;
     int originalBeta = beta;
 
-    // Move ordering: TT move > captures (MVV-LVA) > killers > quiet (history)
+    // search the TT entry move first, then the captures, then the killers, then the history table
     int sideIdx = static_cast<int>(p.getSideToMove());
-    std::sort(moveState.moves.begin(), moveState.moves.end(), [&](const Move& a, const Move& b){
-        auto scoreMove = [&](const Move& m) -> int {
-            if(hasTTMove && m == ttMove) return 20000000;
-            bool isCapture = squares[m.to].type != PieceType::None;
-            if(isCapture) return 10000000 + getMVVLVAScore(squares[m.to], m.to, squares[m.from], m.from);
-            if(ply < MAX_DEPTH){
-                if(m == killers[ply][0]) return 9000001;
-                if(m == killers[ply][1]) return 9000000;
-            }
-            return historyTable[sideIdx][m.from][m.to];
-        };
-        return scoreMove(a) > scoreMove(b);
+    std::sort(moveState.moves.begin(), moveState.moves.end(), 
+        [&hasTTMove, &ttMove, &squares, this, &ply, &sideIdx](const Move& a, const Move& b){
+            auto getMoveScore = [&](const Move& m) -> int {
+                if(hasTTMove && m == ttMove){
+                    return 20000000;
+                }
+                if(m.type == MoveType::P){
+                    return 15000000;
+                }
+                if(squares[m.to].type != PieceType::None){
+                    return 10000000 + getMVVLVAScore(m.from, m.to, squares);
+                }
+                if(m == killers[ply][0]){
+                    return 9000001;
+                }
+                if(m == killers[ply][1]){
+                    return 9000000;
+                }
+                return historyTable[sideIdx][m.from][m.to];
+            };
+        return getMoveScore(a) > getMoveScore(b);
     });
-
+    
     Move bestMove = moveState.moves[0];
 
     if(isMaximizer){
@@ -120,24 +151,26 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
             p.undoMove(move, undo);
             p.generatePieceLists();
             if(beta <= alpha){
-                // Update killers and history for quiet moves that cause cutoffs
-                if(squares[move.to].type == PieceType::None && ply < MAX_DEPTH){
-                    if(!(move == killers[ply][0])){
-                        killers[ply][1] = killers[ply][0];
-                        killers[ply][0] = move;
-                    }
-                    historyTable[sideIdx][move.from][move.to] += depth * depth;
-                }
+                updateHistoryTable(squares, move, depth, ply, sideIdx);
                 break;
             }
         }
 
         // Store in transposition table
-        TTFlag flag;
-        if(max_eval <= originalAlpha) flag = TTFlag::UPPER_BOUND;
-        else if(max_eval >= beta) flag = TTFlag::LOWER_BOUND;
-        else flag = TTFlag::EXACT;
-        ttEntry = {posHash, depth, max_eval, flag, bestMove};
+        if(max_eval <= originalAlpha){
+            ttEntry.flag = TTFlag::UPPER;
+        } 
+        else if(max_eval >= originalBeta) {
+            ttEntry.flag = TTFlag::LOWER;
+        }
+        else {
+            ttEntry.flag = TTFlag::EXACT;
+        }
+
+        ttEntry.hash = posHash;
+        ttEntry.depth = depth;
+        ttEntry.score = max_eval;
+        ttEntry.bestMove = bestMove;
 
         return {bestMove, max_eval};
     }
@@ -156,24 +189,25 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
             p.undoMove(move, undo);
             p.generatePieceLists();
             if(beta <= alpha){
-                // Update killers and history for quiet moves that cause cutoffs
-                if(squares[move.to].type == PieceType::None && ply < MAX_DEPTH){
-                    if(!(move == killers[ply][0])){
-                        killers[ply][1] = killers[ply][0];
-                        killers[ply][0] = move;
-                    }
-                    historyTable[sideIdx][move.from][move.to] += depth * depth;
-                }
+                updateHistoryTable(squares, move, depth, ply, sideIdx);
                 break;
             }
         }
 
-        // Store in transposition table
-        TTFlag flag;
-        if(min_eval <= originalAlpha) flag = TTFlag::UPPER_BOUND;
-        else if(min_eval >= originalBeta) flag = TTFlag::LOWER_BOUND;
-        else flag = TTFlag::EXACT;
-        ttEntry = {posHash, depth, min_eval, flag, bestMove};
+        if(min_eval <= originalAlpha){
+            ttEntry.flag = TTFlag::UPPER;
+        }
+        else if(min_eval >= originalBeta){
+            ttEntry.flag = TTFlag::LOWER;
+        }
+        else {
+            ttEntry.flag = TTFlag::EXACT;
+        }
+
+        ttEntry.hash = posHash;
+        ttEntry.depth = depth;
+        ttEntry.score = min_eval;
+        ttEntry.bestMove = bestMove;
 
         return {bestMove, min_eval};
     }
@@ -238,4 +272,9 @@ MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& mov
         }
         return {bestMove, min_eval};
     }
+}
+
+void Eval::resetTT(){
+    std::fill(tt.begin(), tt.end(), TTEntry{});
+    return;
 }

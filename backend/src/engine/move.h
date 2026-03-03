@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 
-enum class MoveType{Normal, CastleLong, CastleShort, EP, P};
+enum class MoveType{Normal, CastleLong, CastleShort, EP, P, PawnDouble};
 enum class PositionStatus{InProgress, CheckMateWhite, CheckMateBlack, Stalemate, MoveDraw};
 
 struct Move {

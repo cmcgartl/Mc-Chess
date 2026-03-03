@@ -11,13 +11,15 @@ public:
     Board(const std::string& FEN);
     void printBoard() const;
     Piece& at(int square);
-    void movePiece(const Move& move);
+    const Piece& at(int square) const;
+    void movePiece(const Move& move, uint64_t& hash);
     void clearBoard();
     void verifyFEN(const std::string& FEN) const;
     void printSquareValues() const;
     int whiteKingSquare;
     int blackKingSquare;
     std::array<Piece, 64>& getSquares(){return squares;}
+    void updateHash(const Move& move, uint64_t& hash);
     const std::array<Piece, 64>& getSquares() const { return squares; }
     std::string toFEN() const;
 

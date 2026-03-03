@@ -73,6 +73,7 @@ bool Game::makeMove(const std::string& from, const std::string& to) {
 }
 
 void Game::reset() {
+    eval.resetTT();
     p = Position();
     moveHistory.clear();
     res = GameResult::InProgress;
@@ -89,7 +90,9 @@ bool Game::isEngineTurn() const {
 }
 
 std::optional<Move> Game::getEngineBestMove() {
-    if (!isEngineTurn() || currentMoves.moves.empty()) return std::nullopt;
+    if (!isEngineTurn() || currentMoves.moves.empty()){
+        return std::nullopt;
+    }
     Color engineColor = (engineMode == EngineMode::White) ? Color::w : Color::b;
     MiniMaxResult result{{0,0}, negInf};
     eval.nodes = 0;
@@ -99,16 +102,15 @@ std::optional<Move> Game::getEngineBestMove() {
     for(int d = 1; d <= searchDepth; d++){
         MoveGenResult movesCopy = currentMoves;
         result = eval.MiniMax(p, d, 0, true, movesCopy, engineColor, negInf, posInf);
-
     }
     auto end = std::chrono::steady_clock::now();
     double ms = std::chrono::duration<double, std::milli>(end - start).count();
     double nps = (ms > 0) ? (eval.nodes / (ms / 1000.0)) : 0;
-    std::cout << "Depth " << searchDepth
-              << " | Nodes: " << eval.nodes
-              << " | Time: " << static_cast<int>(ms) << "ms"
-              << " | NPS: " << static_cast<int>(nps)
-              << " | Eval: " << result.score << std::endl;
+    std::cout << "Depth " << searchDepth << " | Nodes: " << eval.nodes << " | Time: " << static_cast<int>(ms) << "ms" << " | NPS: " << static_cast<int>(nps) << " | Eval: " << result.score << std::endl;
     return result.bestMove;
+}
+
+void Game::setSelectedMove(const Move& m){
+    selectedMove = m;
 }
 

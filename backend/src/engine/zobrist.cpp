@@ -2,6 +2,9 @@
 
 uint64_t Zobrist::pieceKeys[6][2][64];
 uint64_t Zobrist::sideToMoveKey;
+uint64_t Zobrist::whiteCastleRightsKey;
+uint64_t Zobrist::blackCastleRightsKey;
+uint64_t Zobrist::enPassantFileKeys[8];
 
 void Zobrist::init(){
     std::mt19937_64 eng(12345);
@@ -15,5 +18,11 @@ void Zobrist::init(){
         }
     }
 
+    for(auto& key : enPassantFileKeys){
+        key = dist(eng);
+    }
+
     sideToMoveKey = dist(eng);
+    whiteCastleRightsKey = dist(eng);
+    blackCastleRightsKey = dist(eng);
 }
