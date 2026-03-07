@@ -116,7 +116,9 @@ const ChessGame = () => {
     const [highlightStyles, setHighlightStyles] = useState<Record<string, React.CSSProperties>>({})
 
     useEffect(() => {
-        startGame().then(state => setGame(state))
+        startGame()
+            .then(() => setEngine(engineSide, engineDepth))
+            .then(state => setGame(state))
     }, [])
 
     const [moveLog, setMoveLog] = useState<string[]>([])
@@ -253,8 +255,8 @@ const ChessGame = () => {
                             }}
                             style={{padding: '6px 10px', borderRadius: '4px', backgroundColor: '#0f3460', color: '#eee', border: '1px solid #333', cursor: gameStarted ? 'not-allowed' : 'pointer', opacity: gameStarted ? 0.5 : 1}}
                         >
-                            {[1, 2, 3, 4, 5, 6].map(d => (
-                                <option key={d} value={d}>{d}</option>
+                            {[1, 2, 3, 4, 5].map(d => (
+                                <option key={d} value={d}>{d}{d === 5 ? ' (slow)' : ''}</option>
                             ))}
                         </select>
                     </div>
