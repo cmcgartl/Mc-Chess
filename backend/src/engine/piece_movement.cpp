@@ -212,17 +212,25 @@ void generateDiagonalMoves(int& count, int square, bool cap, Color color, MoveGe
                     break;
                 }
                 if(!checkingForPin){
-                    Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                    result.moves.push_back(m);
-                    count++;
-                    if(p.type == PieceType::K){
-                        color == Color::w ?
-                            result.attacksOnBlackKing.push_back(square) :
-                            result.attacksOnWhiteKing.push_back(square);
-                            break;
+                    if(board.at(square).type == PieceType::K){
+                        if(!isSquareAttacked(nextSquare, color, P)){
+                            Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                            result.moves.push_back(m);
+                            count++;
+                        }
+                    } else {
+                        Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                        result.moves.push_back(m);
+                        count++;
+                        if(p.type == PieceType::K){
+                            color == Color::w ?
+                                result.attacksOnBlackKing.push_back(square) :
+                                result.attacksOnWhiteKing.push_back(square);
+                                break;
+                        }
+                        checkingForPin = true;
+                        possiblePinSquare = nextSquare;
                     }
-                    checkingForPin = true;
-                    possiblePinSquare = nextSquare;
                 }
                 if(cap || !checkingForPin){
                     break;
@@ -290,17 +298,25 @@ void generateOrthoganalMoves(int& count, int square, bool cap, Color color, Move
                     break;
                 }
                 if(!checkingForPin){
-                    Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
-                    result.moves.push_back(m);
-                    count++;
-                    if(p.type == PieceType::K){
-                        color == Color::w ?
-                            result.attacksOnBlackKing.push_back(square) :
-                            result.attacksOnWhiteKing.push_back(square);
-                            break;
+                    if(board.at(square).type == PieceType::K){
+                        if(!isSquareAttacked(nextSquare, color, P)){
+                            Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                            result.moves.push_back(m);
+                            count++;
+                        }
+                    } else {
+                        Move m(static_cast<uint8_t>(square), static_cast<uint8_t>(nextSquare));
+                        result.moves.push_back(m);
+                        count++;
+                        if(p.type == PieceType::K){
+                            color == Color::w ?
+                                result.attacksOnBlackKing.push_back(square) :
+                                result.attacksOnWhiteKing.push_back(square);
+                                break;
+                        }
+                        checkingForPin = true;
+                        possiblePinSquare = nextSquare;
                     }
-                    checkingForPin = true;
-                    possiblePinSquare = nextSquare;
                 }
                 if(cap || !checkingForPin){
                     break;

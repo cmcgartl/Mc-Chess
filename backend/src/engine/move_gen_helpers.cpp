@@ -55,6 +55,20 @@ bool isSquareAttacked(int square, Color color, Position& p){
         return false;
     });
 
+    // Check for enemy king on adjacent squares
+    walkDirectionsAndDo(square, DiagonalDirections, true, [&attacked, &board, color](int sq){
+        if(board.at(sq).type == PieceType::K && board.at(sq).color != color){
+            attacked = true;
+        }
+        return true;
+    });
+    walkDirectionsAndDo(square, OrthoganalDirections, true, [&attacked, &board, color](int sq){
+        if(board.at(sq).type == PieceType::K && board.at(sq).color != color){
+            attacked = true;
+        }
+        return true;
+    });
+
     return attacked;
 }
 
