@@ -122,8 +122,8 @@ class Eval {
         int EvaluatePosition(const std::array<Piece, 64>& squares, Color color, PositionStatus status);
         int getValueForPiece(const Piece& piece, int square);
         int getMVVLVAScore(int from, int to, const std::array<Piece, 64>& squares);
-        MiniMaxResult MiniMax(Position& p, int depth, int ply, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta);
-        MiniMaxResult quiescence(Position& p, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta);
+        MiniMaxResult MiniMax(Position& p, int depth, int ply, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta, std::vector<uint64_t>& positionHistory);
+        MiniMaxResult quiescence(Position& p, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta, std::vector<uint64_t>& positionHistory);
         void updateHistoryTable(const std::array<Piece, 64>& squares, const Move& move, int depth, int ply, int sideToMove);
         void clearKillers();
         void clearHistory();

@@ -9,6 +9,7 @@ Game::Game(){
     res = GameResult::InProgress;
     p.setSideToMove(Side::w);
     currentMoves = p.generateAllValidMovesForSide(Side::w);
+    positionHistory.emplace_back(p.getHash());
 }
 
 int stringToSquare(std::string_view squareString){
@@ -51,14 +52,34 @@ std::string Game::squareToAlgebraic(int square) {
 }
 
 bool Game::makeMove(const std::string& from, const std::string& to) {
+    bool moveIsReversible = false;
     int fromSq = stringToSquare(from);
     int toSq = stringToSquare(to);
     if (fromSq < 0 || toSq < 0) return false;
     Move move(static_cast<uint8_t>(fromSq), static_cast<uint8_t>(toSq));
+    const Piece& PieceFrom = p.getBoard().at(fromSq);
+    const Piece& PieceTo = p.getBoard().at(toSq);
+    if(move.type == MoveType::Normal && PieceFrom.type != PieceType::P && PieceTo.color == Color::None ){
+        moveIsReversible = true;
+    }
     bool success = p.makeMove(move, currentMoves);
     if (success) {
+        if(!moveIsReversible){
+            positionHistory.clear();
+        }
         moveHistory.push_back(move);
+        uint64_t newPositionHash = p.getHash();
+        positionHistory.emplace_back(newPositionHash);
         currentMoves = p.generateAllValidMovesForSide(p.getSideToMove());
+        int repetitionCount = 0;
+        for(const auto& hash : positionHistory){
+            if(hash == newPositionHash){
+                repetitionCount++;
+            }
+        }
+        if(repetitionCount >= 3){
+            currentMoves.status = PositionStatus::MoveDraw;
+        }
         if(currentMoves.status == PositionStatus::CheckMateWhite){
                 res = GameResult::WhiteWin;
         }
@@ -76,6 +97,8 @@ void Game::reset() {
     eval.resetTT();
     p = Position();
     moveHistory.clear();
+    positionHistory.clear();
+    positionHistory.emplace_back(p.getHash());
     res = GameResult::InProgress;
     p.setSideToMove(Side::w);
     currentMoves = p.generateAllValidMovesForSide(Side::w);
@@ -101,7 +124,7 @@ std::optional<Move> Game::getEngineBestMove() {
     auto start = std::chrono::steady_clock::now();
     for(int d = 1; d <= searchDepth; d++){
         MoveGenResult movesCopy = currentMoves;
-        result = eval.MiniMax(p, d, 0, true, movesCopy, engineColor, negInf, posInf);
+        result = eval.MiniMax(p, d, 0, true, movesCopy, engineColor, negInf, posInf, positionHistory);
     }
     auto end = std::chrono::steady_clock::now();
     double ms = std::chrono::duration<double, std::milli>(end - start).count();

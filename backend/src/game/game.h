@@ -48,4 +48,5 @@ class Game {
         EngineMode engineMode = EngineMode::Off;
         int searchDepth = 4;
         Move selectedMove;
+        std::vector<uint64_t> positionHistory;
 };

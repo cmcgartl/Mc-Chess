@@ -66,7 +66,7 @@ int Eval::getValueForPiece(const Piece& piece, int square){
     }
 }
 
-MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta){
+MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta, std::vector<uint64_t>& positionHistory){
     nodes++;
     UndoInfo undo;
     MoveGenResult res;
@@ -76,7 +76,7 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
         return {dummy, EvaluatePosition(squares, c, moveState.status)};
     }
     if(depth == 0){
-        return quiescence(p, isMaximizer, moveState, c, alpha, beta);
+        return quiescence(p, isMaximizer, moveState, c, alpha, beta, positionHistory);
     }
 
     // Probe transposition table
@@ -138,18 +138,32 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
     Move bestMove = moveState.moves[0];
 
     if(isMaximizer){
+        int eval = 0;
         int max_eval = negInf;
         for(const auto& move : moveState.moves){
+            bool foundRepetition = false;
             undo = p.applyMove(move);
             p.generatePieceLists();
             res = p.generateAllValidMovesForSide(p.getSideToMove());
-            int eval = MiniMax(p, depth - 1, ply + 1, false, res, c, alpha, beta).score;
+            uint64_t posHash = p.getHash();
+            for(const auto& prev : positionHistory){
+                if(prev == posHash){
+                    eval = 0;
+                    foundRepetition = true;
+                    break;
+                }
+            }
+            positionHistory.emplace_back(posHash);
+            if(!foundRepetition){
+                eval = MiniMax(p, depth - 1, ply + 1, false, res, c, alpha, beta, positionHistory).score;
+            }
             if(eval > max_eval){
                 max_eval = eval;
                 bestMove = move;
             }
             alpha = std::max(alpha, eval);
             p.undoMove(move, undo);
+            positionHistory.pop_back();
             p.generatePieceLists();
             if(beta <= alpha){
                 updateHistoryTable(squares, move, depth, ply, sideIdx);
@@ -176,18 +190,32 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
         return {bestMove, max_eval};
     }
     else{
+        int eval = 0;
         int min_eval = posInf;
         for(const auto& move : moveState.moves){
+            bool foundRepetition = false;
             undo = p.applyMove(move);
             p.generatePieceLists();
             res = p.generateAllValidMovesForSide(p.getSideToMove());
-            int eval = MiniMax(p, depth - 1, ply + 1, true, res, c, alpha, beta).score;
+            uint64_t posHash = p.getHash();
+            for(const auto& prev : positionHistory){
+                if(prev == posHash){
+                    eval = 0;
+                    foundRepetition = true;
+                    break;
+                } 
+            }
+            positionHistory.emplace_back(posHash);
+            if(!foundRepetition){
+                eval = MiniMax(p, depth - 1, ply + 1, true, res, c, alpha, beta, positionHistory).score;
+            }
             if(eval < min_eval){
                 min_eval = eval;
                 bestMove = move;
             }
             beta = std::min(beta, eval);
             p.undoMove(move, undo);
+            positionHistory.pop_back();
             p.generatePieceLists();
             if(beta <= alpha){
                 updateHistoryTable(squares, move, depth, ply, sideIdx);
@@ -215,7 +243,7 @@ MiniMaxResult Eval::MiniMax(Position& p, int depth, int ply, bool isMaximizer, M
 }
 
 
-MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta){
+MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& moveState, Color c, int alpha, int beta, std::vector<uint64_t>& positionHistory){
     nodes++;
     const auto squares = p.getBoard().getSquares();
     Move dummy(0, 0);
@@ -224,7 +252,9 @@ MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& mov
     int standPat = EvaluatePosition(squares, c, moveState.status);
 
     if(isMaximizer){
-        if(standPat >= beta) return {dummy, standPat};
+        if(standPat >= beta){
+            return {dummy, standPat};
+        }
         alpha = std::max(alpha, standPat);
         int max_eval = standPat;
         Move bestMove = dummy;
@@ -234,9 +264,11 @@ MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& mov
 
             UndoInfo undo = p.applyMove(move);
             p.generatePieceLists();
+            positionHistory.emplace_back(p.getHash());
             MoveGenResult res = p.generateAllValidMovesForSide(p.getSideToMove());
-            int eval = quiescence(p, false, res, c, alpha, beta).score;
+            int eval = quiescence(p, false, res, c, alpha, beta, positionHistory).score;
             p.undoMove(move, undo);
+            positionHistory.pop_back();
             p.generatePieceLists();
 
             if(eval > max_eval){
@@ -246,10 +278,13 @@ MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& mov
             alpha = std::max(alpha, eval);
             if(beta <= alpha) break;
         }
+
         return {bestMove, max_eval};
     }
     else{
-        if(standPat <= alpha) return {dummy, standPat};
+        if(standPat <= alpha){
+            return {dummy, standPat};
+        }
         beta = std::min(beta, standPat);
         int min_eval = standPat;
         Move bestMove = dummy;
@@ -259,9 +294,11 @@ MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& mov
 
             UndoInfo undo = p.applyMove(move);
             p.generatePieceLists();
+            positionHistory.emplace_back(p.getHash());
             MoveGenResult res = p.generateAllValidMovesForSide(p.getSideToMove());
-            int eval = quiescence(p, true, res, c, alpha, beta).score;
+            int eval = quiescence(p, true, res, c, alpha, beta, positionHistory).score;
             p.undoMove(move, undo);
+            positionHistory.pop_back();
             p.generatePieceLists();
 
             if(eval < min_eval){
@@ -271,6 +308,7 @@ MiniMaxResult Eval::quiescence(Position& p, bool isMaximizer, MoveGenResult& mov
             beta = std::min(beta, eval);
             if(beta <= alpha) break;
         }
+
         return {bestMove, min_eval};
     }
 }
